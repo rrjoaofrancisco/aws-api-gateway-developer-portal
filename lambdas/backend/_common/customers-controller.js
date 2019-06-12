@@ -5,7 +5,7 @@
 const AWS = require('aws-sdk')
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient()
-const apigateway = new AWS.APIGateway()
+const apigateway = new AWS.APIGateway({region: 'sa-east-1'})
 
 const customersTable = process.env.CustomersTableName || 'DevPortalCustomers'
 
@@ -71,7 +71,8 @@ function getCognitoIdentityId(marketplaceCustomerId, error, callback) {
 }
 
 function subscribe(cognitoIdentityId, usagePlanId, errFunc, callback) {
-
+    console.log("-------- COGNITOID: " + cognitoIdentityId)
+    console.log("-------- USAGEPLANID: " + usagePlanId)
     getApiKeyForCustomer(cognitoIdentityId, errFunc, (data) => {
         console.log(`Get Api Key data ${JSON.stringify(data)}`)
 

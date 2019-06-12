@@ -47,12 +47,14 @@ function swaggerFileFilter(file) {
  * @returns {Promise.<Object>} a promise that resolves to an internal file representation
  */
 function getSwaggerFile(file) {
+  console.log('-----------SWAGGER FILE')
+  console.log(file)
   let params = {
     Bucket: bucketName,
     Key: file.Key
   },
-  isApiStageKeyRegex = /^[a-zA-Z0-9]{10}_.*/,
-  isUnsubscribableApiStageKeyRegex = /^unsubscribable_[a-zA-Z0-9]{10}_.*/
+    isApiStageKeyRegex = /^[a-zA-Z0-9]{10}_.*/,
+    isUnsubscribableApiStageKeyRegex = /^unsubscribable_[a-zA-Z0-9]{10}_.*/
 
   return exports.s3.getObject(params).promise()
     .then((s3Repr) => {
@@ -162,6 +164,8 @@ function copyAnyMethod(api) {
   let anyKey = "x-amazon-apigateway-any-method"
   let methodsToAdd = ["get", "post", "put", "delete", "patch", "head", "options"]
 
+  console.log("------------ API PATHS: ")
+  console.log(apiPaths)
   Object.keys(apiPaths).forEach(pathKey => {
     let path = apiPaths[pathKey]
     if (path[anyKey]) {
@@ -177,31 +181,37 @@ function copyAnyMethod(api) {
 }
 
 function buildCatalog(swaggerFiles, sdkGeneration) {
+  console.log(`-----------BUILD CATALOG`)
   console.log(`results: ${JSON.stringify(swaggerFiles, null, 4)}`)
   console.log(sdkGeneration)
-
+  console.log("------------- GATEWAY")
+  console.log(exports.gateway)
+  
   let catalog = {
     apiGateway: [],
     generic: []
   }
 
+
   return exports.gateway.getUsagePlans({}).promise()
     .then((result) => {
+      console.log(`-------------------------- USAGE PLANS`)
       console.log(`usagePlans: ${JSON.stringify(result.items, null, 4)}`)
+      console.log(`--------------- RESULT: ${JSON.stringify(result)}`)
       let usagePlans = result.items
       for (let i = 0; i < usagePlans.length; i++) {
-          catalog.apiGateway[i] = usagePlanToCatalogObject(usagePlans[i], swaggerFiles, sdkGeneration)
+        catalog.apiGateway[i] = usagePlanToCatalogObject(usagePlans[i], swaggerFiles, sdkGeneration)
       }
 
-        catalog.generic.push(
+      catalog.generic.push(
         ...swaggerFiles.filter(s => s.generic).map(s => {
           s.swagger = s.body
           delete s.body
           console.log(`This generic API has an id of ${s.id} and sdkGeneration[s.id] === ${sdkGeneration[s.id]}`)
 
           s.sdkGeneration = !!sdkGeneration[s.id]
-          if(!s.sdkGeneration) {
-              s.sdkGeneration = !!sdkGeneration[`${s.apiId}_${s.stage}`]
+          if (!s.sdkGeneration) {
+            s.sdkGeneration = !!sdkGeneration[`${s.apiId}_${s.stage}`]
           }
           return s
         })
@@ -217,26 +227,30 @@ function buildCatalog(swaggerFiles, sdkGeneration) {
 }
 
 async function handler(event, context) {
-    console.log(`event: ${JSON.stringify(event, null, 4)}`)
-    bucketName = process.env.BucketName
+  console.log(`-----------HANDLER`)
+  console.log(`event: ${JSON.stringify(event, null, 4)}`)
+  bucketName = process.env.BucketName
 
-    let sdkGeneration = JSON.parse((await exports.s3.getObject({ Bucket: bucketName, Key: 'sdkGeneration.json' }).promise())
-                        .Body.toString())
-    console.log(sdkGeneration)
+  let sdkGeneration = JSON.parse((await exports.s3.getObject({ Bucket: bucketName, Key: 'sdkGeneration.json' }).promise())
+    .Body.toString())
+  console.log(sdkGeneration)
 
-    let listObjectsResult = await exports.s3.listObjectsV2({ Bucket: bucketName }).promise(),
-        catalog = await exports.buildCatalog(await Promise.all(listObjectsResult.Contents
-                         .filter(exports.swaggerFileFilter)
-                         .map(exports.getSwaggerFile)), sdkGeneration)
+  let listObjectsResult = await exports.s3.listObjectsV2({ Bucket: bucketName }).promise(),
+     catalog = await exports.buildCatalog(await Promise.all(listObjectsResult.Contents
+    .filter(exports.swaggerFileFilter)
+    .map(exports.getSwaggerFile)), sdkGeneration)
 
-    let params = {
-      Bucket: bucketName,
-      Key: 'catalog.json',
-      Body: JSON.stringify(catalog),
-      ContentType: 'application/json'
-    }
+  console.log("----------- LISTOBJECTRESULT: " + listObjectsResult)
+  console.log("----------- CATALOG: " + catalog)
 
-    await exports.s3.upload(params).promise()
+  let params = {
+    Bucket: bucketName,
+    Key: 'catalog.json',
+    Body: JSON.stringify(catalog),
+    ContentType: 'application/json'
+  }
+
+  await exports.s3.upload(params).promise()
 }
 
 // make available for unit testing
@@ -249,7 +263,7 @@ exports = module.exports = {
   usagePlanToCatalogObject,
   copyAnyMethod,
   s3: new AWS.S3(),
-  gateway: new AWS.APIGateway(),
+  gateway: new AWS.APIGateway({region: 'sa-east-1'}),
   handler,
   hash
 }

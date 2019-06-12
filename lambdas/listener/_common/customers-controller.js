@@ -5,7 +5,7 @@
 const AWS = require('aws-sdk')
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient()
-const apigateway = new AWS.APIGateway()
+const apigateway = new AWS.APIGateway({region: 'sa-east-1'})
 
 const customersTable = process.env.CustomersTableName || 'DevPortalCustomers'
 

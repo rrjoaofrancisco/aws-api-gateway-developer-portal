@@ -128,7 +128,7 @@ function putSubscription(req, res) {
     const cognitoIdentityId = getCognitoIdentityId(req)
     console.log(`PUT /subscriptions for Cognito ID: ${cognitoIdentityId}`)
     const usagePlanId = req.params.usagePlanId
-
+    console.log("---------- AASQUI USAGEPLANID: " + usagePlanId)
     getUsagePlanFromCatalog(usagePlanId).then(async (catalogUsagePlan) => {
         const isUsagePlanInCatalog = Boolean(catalogUsagePlan)
         const apiGatewayUsagePlan = await exports.apigateway.getUsagePlan({ usagePlanId }).promise()
@@ -676,7 +676,7 @@ exports = module.exports = {
     deleteAdminCatalogSdkGeneration,
     idempotentSdkGenerationUpdate,
     s3: new AWS.S3(),
-    apigateway: new AWS.APIGateway(),
+    apigateway: new AWS.APIGateway({region: 'sa-east-1'}),
     lambda: new AWS.Lambda(),
     hash
 }

@@ -240,8 +240,7 @@ async function handler(event, context) {
     .filter(exports.swaggerFileFilter)
     .map(exports.getSwaggerFile)), sdkGeneration)
 
-  console.log("----------- LISTOBJECTRESULT: " + listObjectsResult)
-  console.log("----------- CATALOG: " + catalog)
+  console.log("----------- LISTOBJECTRESULT: ", JSON.stringify(listObjectsResult))
 
   let params = {
     Bucket: bucketName,

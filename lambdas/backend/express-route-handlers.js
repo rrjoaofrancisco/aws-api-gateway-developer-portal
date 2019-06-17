@@ -11,6 +11,7 @@ const domain = `${process.env.CLIENT_BUCKET_NAME}.s3-website-${process.env.AWS_D
 const baseUrl = `http://${domain}/`
 
 const feedbackEnabled = !!process.env['FeedbackSnsTopicArn']
+const regions = ['us-east-1', 'sa-east-1']
 
 function getCognitoIdentityId(req) {
     return req.apiGateway.event.requestContext.identity.cognitoIdentityId
@@ -25,9 +26,9 @@ function getCognitoUserId(req) {
     // Where us-east-1_aaaaaaaaa is the User Pool id
     // And qqqqqqqq-1111-2222-3333-rrrrrrrrrrrr is the User Pool User Id
     const parts = authProvider.split(':'),
-          userPoolIdParts = parts[parts.length - 3].split('/'),
-          userPoolId = userPoolIdParts[userPoolIdParts.length - 1],
-          userPoolUserId = parts[parts.length - 1]
+        userPoolIdParts = parts[parts.length - 3].split('/'),
+        userPoolId = userPoolIdParts[userPoolIdParts.length - 1],
+        userPoolUserId = parts[parts.length - 1]
 
     return userPoolUserId
 }
@@ -128,10 +129,8 @@ function putSubscription(req, res) {
     const cognitoIdentityId = getCognitoIdentityId(req)
     console.log(`PUT /subscriptions for Cognito ID: ${cognitoIdentityId}`)
     const usagePlanId = req.params.usagePlanId
-    console.log("---------- AASQUI USAGEPLANID: " + usagePlanId)
     getUsagePlanFromCatalog(usagePlanId).then(async (catalogUsagePlan) => {
         const isUsagePlanInCatalog = Boolean(catalogUsagePlan)
-        const apiGatewayUsagePlan = await exports.apigateway.getUsagePlan({ usagePlanId }).promise()
 
         function error(data) {
             console.log(`error: ${data}`)
@@ -145,10 +144,10 @@ function putSubscription(req, res) {
         // the usage plan doesn't exist
         if (!isUsagePlanInCatalog) {
             res.status(404).json({ error: 'Invalid Usage Plan ID' })
-        // the usage plan exists, but 0 of its apis are visible
-        } else if(!catalogUsagePlan.apis.length) {
+            // the usage plan exists, but 0 of its apis are visible
+        } else if (!catalogUsagePlan.apis.length) {
             res.status(404).json({ error: 'Invalid Usage Plan ID' })
-        // allow subscription if (the usage plan exists, at least 1 of its apis are visible)
+            // allow subscription if (the usage plan exists, at least 1 of its apis are visible)
         } else {
             customersController.subscribe(cognitoIdentityId, usagePlanId, error, success)
         }
@@ -182,16 +181,17 @@ function getUsage(req, res) {
                     keyId,
                     limit: 1000
                 }
-
-                exports.apigateway.getUsage(params, (err, usageData) => {
-                    if (err) {
-                        console.log(`get usage err ${JSON.stringify(err)}`)
-                        errFunc(err)
-                    } else {
-                        console.log(`get usage data ${JSON.stringify(usageData)}`)
-                        res.status(200).json(usageData)
-                    }
-                })
+                regions.forEach(element => {
+                    new AWS.APIGateway({ region: element }).getUsage(params, (err, usageData) => {
+                        if (err) {
+                            console.log(`get usage err ${JSON.stringify(err)}`)
+                            errFunc(err)
+                        } else {
+                            console.log(`get usage data ${JSON.stringify(usageData)}`)
+                            res.status(200).json(usageData)
+                        }
+                    })
+                });
             })
         }
     })
@@ -215,7 +215,7 @@ function deleteSubscription(req, res) {
         const isUsagePlanInCatalog = Boolean(usagePlan)
 
         if (!isUsagePlanInCatalog) {
-            res.status(404).json({ error: 'Invalid Usage Plan ID'})
+            res.status(404).json({ error: 'Invalid Usage Plan ID' })
         } else {
             customersController.unsubscribe(cognitoIdentityId, usagePlanId, error, success)
         }
@@ -335,7 +335,7 @@ function findApiInCatalog(restApiId, stageName, catalog) {
 
     Object.keys(catalog.generic).forEach((genericKey) => {
         let api = catalog.generic[genericKey]
-        if(api.apiId === restApiId && api.stage === stageName)
+        if (api.apiId === restApiId && api.stage === stageName)
             foundApi = api
     })
 
@@ -352,9 +352,9 @@ async function getSdk(req, res) {
         stageName = req.params.id.split('_')[1],
         catalogObject = findApiInCatalog(restApiId, stageName, await catalog())
 
-    if(!catalogObject) {
+    if (!catalogObject) {
         res.status(400).json({ message: `API with ID (${restApiId}) and Stage (${stageName}) could not be found.` })
-    } else if(!catalogObject.sdkGeneration) {
+    } else if (!catalogObject.sdkGeneration) {
         res.status(400).json({ message: `API with ID (${restApiId}) and Stage (${stageName}) is not enabled for SDK generation.` })
     } else {
         let parameters = req.query.parameters
@@ -365,117 +365,124 @@ async function getSdk(req, res) {
         }
         console.log(req.query.parameters)
         console.log(parameters)
-        let resultsBuffer = (await exports.apigateway.getSdk({
-            restApiId,
-            sdkType: req.query.sdkType,
-            stageName,
-            parameters
-        }).promise()).body
+        //TODO need more tests!
+        await Promise.all(regions.map(async (element) => {
 
-        const datauri = new Datauri();
-        datauri.format('.zip', resultsBuffer)
+            let resultsBuffer = (await new AWS.APIGateway({ region: element }).getSdk({
+                restApiId,
+                sdkType: req.query.sdkType,
+                stageName,
+                parameters
+            }).promise()).body
 
-        res.send(datauri.content)
+            const datauri = new Datauri();
+            datauri.format('.zip', resultsBuffer)
+
+            res.send(datauri.content)
+        }));
     }
 }
 
 async function getAdminCatalogVisibility(req, res) {
     console.log(`GET /admin/catalog/visibility for Cognito ID: ${getCognitoIdentityId(req)}`)
     try {
-
         let visibility = { apiGateway: [] },
-            catalogObject = await catalog(),
-            apis = (await exports.apigateway.getRestApis().promise()).items
+            catalogObject = await catalog()
 
-        console.log(`network request: ${JSON.stringify(apis, null, 4)}`)
-        console.log(`apis: ${JSON.stringify(apis, null, 4)}`)
+        await Promise.all(regions.map(async (element) => {
+            let apiGW = new AWS.APIGateway({ region: element })
+            let apis = (await apiGW.getRestApis().promise()).items
 
-        let promises = []
-        apis.forEach((api) => {
-            promises.push(
-                exports.apigateway.getStages({ restApiId: api.id }).promise()
-                    .then((response) => response.item)
-                    .then((stages) => stages.forEach(stage => visibility.apiGateway.push({
-                        id: api.id,
-                        name: api.name,
-                        stage: stage.stageName,
-                        visibility: false
-                    })))
-            )
-        })
-        await Promise.all(promises)
+            console.log(`network request: ${JSON.stringify(apis, null, 4)}`)
+            console.log(`apis: ${JSON.stringify(apis, null, 4)}`)
 
-        console.log(`visibility: ${JSON.stringify(visibility, null, 4)}`)
-
-        // mark every api gateway managed api-stage in the catalog as visible
-        catalogObject.apiGateway.forEach((usagePlan) => {
-            usagePlan.apis.forEach((api) => {
-                visibility.apiGateway.map((apiEntry) => {
-                    if(apiEntry.id === api.id && apiEntry.stage === api.stage) {
-                        apiEntry.visibility = true
-                        apiEntry.sdkGeneration = api.sdkGeneration || false
-                    }
-
-                    return apiEntry
-                })
+            let promises = []
+            apis.forEach((api) => {
+                promises.push(
+                    apiGW.getStages({ restApiId: api.id }).promise()
+                        .then((response) => response.item)
+                        .then((stages) => stages.forEach(stage => visibility.apiGateway.push({
+                            id: api.id,
+                            name: api.name,
+                            stage: stage.stageName,
+                            visibility: false
+                        })))
+                )
             })
-        })
+            await Promise.all(promises)
 
-        let usagePlans = await exports.apigateway.getUsagePlans().promise()
+            console.log(`visibility: ${JSON.stringify(visibility, null, 4)}`)
 
-        // In the case of apiGateway APIs, the client doesn't know if there are usage plan associated or not
-        // so we need to provide that information. This can't be merged with the above loop:
-        // (catalogObject.apiGateway.forEach((usagePlan) => ...
-        // because the catalog only contains *visible* apis, and this loop needs to record the subscribability
-        // of both visible and non-visible APIs.
-        visibility.apiGateway.map((apiEntry) => {
-            apiEntry.subscribable = false
+            // mark every api gateway managed api-stage in the catalog as visible
+            catalogObject.apiGateway.forEach((usagePlan) => {
+                usagePlan.apis.forEach((api) => {
+                    visibility.apiGateway.map((apiEntry) => {
+                        if (apiEntry.id === api.id && apiEntry.stage === api.stage) {
+                            apiEntry.visibility = true
+                            apiEntry.sdkGeneration = api.sdkGeneration || false
+                        }
 
-            usagePlans.items.forEach((usagePlan) => {
-                usagePlan.apiStages.forEach((apiStage) => {
-                    if(apiEntry.id === apiStage.apiId && apiEntry.stage === apiStage.stage) {
-                        apiEntry.subscribable = true
-                        apiEntry.usagePlanId = usagePlan.id
-                        apiEntry.usagePlanName = usagePlan.name
-                    }
-
-                    apiEntry.sdkGeneration = !!apiEntry.sdkGeneration
+                        return apiEntry
+                    })
                 })
             })
 
-            return apiEntry
-        })
+            let usagePlans = await apiGW.getUsagePlans().promise()
 
-        // mark every api in the generic catalog as visible
-        catalogObject.generic.forEach((catalogEntry) => {
-            if(!visibility.generic) {
-                visibility.generic = {}
-            }
+            // In the case of apiGateway APIs, the client doesn't know if there are usage plan associated or not
+            // so we need to provide that information. This can't be merged with the above loop:
+            // (catalogObject.apiGateway.forEach((usagePlan) => ...
+            // because the catalog only contains *visible* apis, and this loop needs to record the subscribability
+            // of both visible and non-visible APIs.
+            visibility.apiGateway.map((apiEntry) => {
+                apiEntry.subscribable = false
 
-            visibility.generic[catalogEntry.id] = {
-                visibility: true,
-                name: (catalogEntry.swagger && catalogEntry.swagger.info && catalogEntry.swagger.info.title) || 'Untitled'
-            }
+                usagePlans.items.forEach((usagePlan) => {
+                    usagePlan.apiStages.forEach((apiStage) => {
+                        if (apiEntry.id === apiStage.apiId && apiEntry.stage === apiStage.stage) {
+                            apiEntry.subscribable = true
+                            apiEntry.usagePlanId = usagePlan.id
+                            apiEntry.usagePlanName = usagePlan.name
+                        }
 
-            if(catalogEntry.stage)
-                visibility.generic[catalogEntry.id].stage = catalogEntry.stage
-            if(catalogEntry.apiId)
-                visibility.generic[catalogEntry.id].apiId = catalogEntry.apiId
-            if(catalogEntry.sdkGeneration !== undefined) {
-                visibility.apiGateway.map((api) => {
-                    console.log(api)
-                    console.log(catalogEntry)
-                    if(api.id === catalogEntry.apiId && api.stage === catalogEntry.stage) {
-                        api.sdkGeneration = catalogEntry.sdkGeneration
-                    }
-                    return api
+                        apiEntry.sdkGeneration = !!apiEntry.sdkGeneration
+                    })
                 })
-            }
-        })
+
+                return apiEntry
+            })
+
+            // mark every api in the generic catalog as visible
+            catalogObject.generic.forEach((catalogEntry) => {
+                if (!visibility.generic) {
+                    visibility.generic = {}
+                }
+
+                visibility.generic[catalogEntry.id] = {
+                    visibility: true,
+                    name: (catalogEntry.swagger && catalogEntry.swagger.info && catalogEntry.swagger.info.title) || 'Untitled'
+                }
+
+                if (catalogEntry.stage)
+                    visibility.generic[catalogEntry.id].stage = catalogEntry.stage
+                if (catalogEntry.apiId)
+                    visibility.generic[catalogEntry.id].apiId = catalogEntry.apiId
+                if (catalogEntry.sdkGeneration !== undefined) {
+                    visibility.apiGateway.map((api) => {
+                        console.log(api)
+                        console.log(catalogEntry)
+                        if (api.id === catalogEntry.apiId && api.stage === catalogEntry.stage) {
+                            api.sdkGeneration = catalogEntry.sdkGeneration
+                        }
+                        return api
+                    })
+                }
+            })
+        }));
 
         res.status(200).json(visibility)
     } catch (err) {
-        console.error(`error: ${ err.stack }`)
+        console.error(`error: ${err.stack}`)
 
         // TODO: Should this be 'error' or 'message'?
         res.status(500).json({ error: 'Internal Server Error' })
@@ -487,9 +494,11 @@ async function postAdminCatalogVisibility(req, res) {
 
     // for apigateway managed APIs, provide "apiId_stageName"
     // in the apiKey field
-    if(req.body && req.body.apiKey) {
-        // try {
-            let swagger = await exports.apigateway.getExport({
+    await Promise.all(regions.map(async (element) => {
+
+        if (req.body && req.body.apiKey) {
+            // try {
+            let swagger = await new AWS.APIGateway({ region: element }).getExport({
                 restApiId: req.body.apiKey.split('_')[0],
                 stageName: req.body.apiKey.split('_')[1],
                 exportType: 'swagger',
@@ -500,7 +509,7 @@ async function postAdminCatalogVisibility(req, res) {
 
             console.log('swagger: ', swagger.body)
             console.log('subscribable: ', req.body.subscribable)
-            
+
             let params
             if (req.body.subscribable === 'true' || req.body.subscribable === true) {
                 params = {
@@ -508,7 +517,7 @@ async function postAdminCatalogVisibility(req, res) {
                     Key: `catalog/${req.body.apiKey}.json`,
                     Body: swagger.body
                 }
-    
+
             } else if (req.body.subscribable === 'false') {
                 params = {
                     Bucket: process.env.StaticBucketName,
@@ -521,36 +530,37 @@ async function postAdminCatalogVisibility(req, res) {
             await exports.s3.upload(params).promise()
 
             res.status(200).json({ message: 'Success' })
-        // }
+            // }
 
-    // for generic swagger, just provide the swagger body
-    } else if(req.body && req.body.swagger) {
-        try {
-            const swaggerObject = JSON.parse(req.body.swagger)
-            if(!(swaggerObject.info && swaggerObject.info.title)) {
-                res.status(400).json({ message: 'Invalid input. API specification file must have a title.' })
+            // for generic swagger, just provide the swagger body
+        } else if (req.body && req.body.swagger) {
+            try {
+                const swaggerObject = JSON.parse(req.body.swagger)
+                if (!(swaggerObject.info && swaggerObject.info.title)) {
+                    res.status(400).json({ message: 'Invalid input. API specification file must have a title.' })
+                }
+
+                console.log(`Given the input of type ${typeof swaggerObject}:`)
+                console.log(JSON.stringify(swaggerObject, null, 4))
+                console.log(`I produced the hash: ${hash(swaggerObject)}`)
+
+                let params = {
+                    Bucket: process.env.StaticBucketName,
+                    Key: `catalog/${hash(swaggerObject)}.json`,
+                    Body: req.body.swagger
+                }
+
+                await exports.s3.upload(params).promise()
+
+                res.status(200).json({ message: 'Success' })
+            } catch (error) {
+                console.error(error)
+                res.status(400).json({ message: 'Invalid input' })
             }
-
-            console.log(`Given the input of type ${typeof swaggerObject}:`)
-            console.log(JSON.stringify(swaggerObject, null, 4))
-            console.log(`I produced the hash: ${hash(swaggerObject)}`)
-
-            let params = {
-                Bucket: process.env.StaticBucketName,
-                Key: `catalog/${hash(swaggerObject)}.json`,
-                Body: req.body.swagger
-            }
-
-            await exports.s3.upload(params).promise()
-
-            res.status(200).json({ message: 'Success' })
-        } catch(error) {
-            console.error(error)
+        } else {
             res.status(400).json({ message: 'Invalid input' })
         }
-    } else {
-        res.status(400).json({ message: 'Invalid input' })
-    }
+    }));
 }
 
 async function deleteAdminCatalogVisibility(req, res) {
@@ -560,12 +570,12 @@ async function deleteAdminCatalogVisibility(req, res) {
     // for apigateway managed APIs, provide "apiId_stageName"
     // in the apiKey field
     console.log('delete request params:', req.params)
-    if(req.params && req.params.id) {
+    if (req.params && req.params.id) {
         let unsubscribable = true
 
         catalogObject.apiGateway.forEach((usagePlan) => {
             usagePlan.apis.forEach((api) => {
-                if(api.id === req.params.id.split('_')[0] && api.stage === req.params.id.split('_')[1]) {
+                if (api.id === req.params.id.split('_')[0] && api.stage === req.params.id.split('_')[1]) {
                     unsubscribable = false
                 }
             })
@@ -582,12 +592,12 @@ async function deleteAdminCatalogVisibility(req, res) {
 
         res.status(200).json({ message: 'Success' })
 
-    // for generic swagger, provide the hashed swagger body
-    // in the id field
-    } else if(req.params && req.params.genericId) {
+        // for generic swagger, provide the hashed swagger body
+        // in the id field
+    } else if (req.params && req.params.genericId) {
         let params = {
             Bucket: process.env.StaticBucketName,
-            Key: `catalog/${ req.params.genericId }.json`
+            Key: `catalog/${req.params.genericId}.json`
         }
 
         await exports.s3.deleteObject(params).promise()
@@ -676,7 +686,7 @@ exports = module.exports = {
     deleteAdminCatalogSdkGeneration,
     idempotentSdkGenerationUpdate,
     s3: new AWS.S3(),
-    apigateway: new AWS.APIGateway({region: 'sa-east-1'}),
+    apigateway: new AWS.APIGateway({ region: 'sa-east-1' }),
     lambda: new AWS.Lambda(),
     hash
 }

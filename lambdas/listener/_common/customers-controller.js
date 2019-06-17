@@ -5,9 +5,9 @@
 const AWS = require('aws-sdk')
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient()
-const apigateway = new AWS.APIGateway({region: 'sa-east-1'})
 
 const customersTable = process.env.CustomersTableName || 'DevPortalCustomers'
+const regions = ['us-east-1', 'sa-east-1']
 
 function ensureCustomerItem(cognitoIdentityId, keyId, error, callback) {
     const customerId = cognitoIdentityId// + '+' + keyId
@@ -130,14 +130,17 @@ function createApiKey(cognitoIdentityId, error, callback) {
         name: cognitoIdentityId
     }
 
-    apigateway.createApiKey(params, (err, data) => {
-        if (err) {
-            console.log('createApiKey error', error)
-            error(err)
-        } else {
-            updateCustomerApiKeyId(cognitoIdentityId, data.id, error, () => callback(data))
-        }
-    })
+    regions.forEach(element => {
+
+        new AWS.APIGateway({ region: element }).createApiKey(params, (err, data) => {
+            if (err) {
+                console.log('createApiKey error', error)
+                error(err)
+            } else {
+                updateCustomerApiKeyId(cognitoIdentityId, data.id, error, () => callback(data))
+            }
+        })
+    });
 }
 
 function createUsagePlanKey(keyId, usagePlanId, error, callback) {
@@ -148,10 +151,13 @@ function createUsagePlanKey(keyId, usagePlanId, error, callback) {
         keyType: 'API_KEY',
         usagePlanId
     }
-    apigateway.createUsagePlanKey(params, (err, data) => {
-        if (err) error(err)
-        else callback(data)
-    })
+    regions.forEach(element => {
+
+        new AWS.APIGateway({ region: element }).createUsagePlanKey(params, (err, data) => {
+            if (err) error(err)
+            else callback(data)
+        })
+    });
 }
 
 function deleteUsagePlanKey(keyId, usagePlanId, error, callback) {
@@ -161,10 +167,13 @@ function deleteUsagePlanKey(keyId, usagePlanId, error, callback) {
         keyId,
         usagePlanId
     }
-    apigateway.deleteUsagePlanKey(params, (err, data) => {
-        if (err) error(err)
-        else callback(data)
-    })
+    regions.forEach(element => {
+
+        new AWS.APIGateway({ region: element }).deleteUsagePlanKey(params, (err, data) => {
+            if (err) error(err)
+            else callback(data)
+        })
+    });
 }
 
 function getApiKeyForCustomer(cognitoIdentityId, error, callback) {
@@ -175,10 +184,13 @@ function getApiKeyForCustomer(cognitoIdentityId, error, callback) {
         includeValues: true,
         nameQuery: cognitoIdentityId
     }
-    apigateway.getApiKeys(params, (err, data) => {
-        if (err) error(err)
-        else callback(data)
-    })
+    regions.forEach(element => {
+
+        new AWS.APIGateway({ region: element }).getApiKeys(params, (err, data) => {
+            if (err) error(err)
+            else callback(data)
+        })
+    });
 }
 
 function getUsagePlansForCustomer(cognitoIdentityId, error, callback) {
@@ -186,17 +198,20 @@ function getUsagePlansForCustomer(cognitoIdentityId, error, callback) {
 
     getApiKeyForCustomer(cognitoIdentityId, error, (data) => {
         if (data.items.length === 0) {
-            callback({data : {}})
+            callback({ data: {} })
         } else {
             const keyId = data.items[0].id
             const params = {
                 keyId,
                 limit: 1000
             }
-            apigateway.getUsagePlans(params, (err, usagePlansData) => {
-                if (err) error(err)
-                else callback(usagePlansData)
-            })
+            regions.forEach(element => {
+
+                new AWS.APIGateway({ region: element }).getUsagePlans(params, (err, usagePlansData) => {
+                    if (err) error(err)
+                    else callback(usagePlansData)
+                })
+            });
         }
     })
 }
@@ -208,24 +223,27 @@ function getUsagePlanForProductCode(productCode, error, callback) {
     var params = {
         limit: 1000
     };
-    apigateway.getUsagePlans(params, function(err, data) {
-        if (err) {
-            error(err)
-        } else {
-            console.log(`Got usage plans ${JSON.stringify(data.items)}`)
+    regions.forEach(element => {
 
-            // note: ensure that only one usage plan maps to a given marketplace product code
-            const usageplan = data.items.find(function (item) {
-                return item.productCode !== undefined && item.productCode === productCode
-            })
-            if (usageplan !== undefined) {
-                console.log(`Found usage plan matching ${productCode}`)
-                callback(usageplan)
+        new AWS.APIGateway({ region: element }).getUsagePlans(params, function (err, data) {
+            if (err) {
+                error(err)
             } else {
-                console.log(`Couldn't find usageplan matching product code ${productCode}`)
-                error(`Couldn't find usageplan matching product code ${productCode}`)
+                console.log(`Got usage plans ${JSON.stringify(data.items)}`)
+
+                // note: ensure that only one usage plan maps to a given marketplace product code
+                const usageplan = data.items.find(function (item) {
+                    return item.productCode !== undefined && item.productCode === productCode
+                })
+                if (usageplan !== undefined) {
+                    console.log(`Found usage plan matching ${productCode}`)
+                    callback(usageplan)
+                } else {
+                    console.log(`Couldn't find usageplan matching product code ${productCode}`)
+                    error(`Couldn't find usageplan matching product code ${productCode}`)
+                }
             }
-        }
+        });
     });
 }
 
@@ -292,9 +310,12 @@ function updateApiKey(apiKeyId, marketplaceCustomerId, error, success) {
             }
         ]
     };
-    apigateway.updateApiKey(params, function(err, data) {
-        if (err) error(err)
-        else     success(data)
+    regions.forEach(element => {
+
+        new AWS.APIGateway({ region: element }).updateApiKey(params, function (err, data) {
+            if (err) error(err)
+            else success(data)
+        });
     });
 }
 

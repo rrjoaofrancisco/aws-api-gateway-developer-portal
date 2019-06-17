@@ -12,6 +12,7 @@ let AWS = require('aws-sdk'),
   bucketName = '',
   hash = require('object-hash')
 
+const regions = ['us-east-1', 'sa-east-1']
 /**
  * Takes in an s3 listObjectsV2 object and returns whether it's a "swagger file" (one ending in .JSON, .YAML, or .YML),
  * and whether it's in the catalog folder (S3 Key starts with "catalog/").
@@ -181,75 +182,45 @@ function copyAnyMethod(api) {
 }
 
 function buildCatalog(swaggerFiles, sdkGeneration) {
-  console.log(`-----------BUILD CATALOG`)
   console.log(`results: ${JSON.stringify(swaggerFiles, null, 4)}`)
   console.log(sdkGeneration)
-  console.log("------------- GATEWAY")
-  console.log(exports.gateway)
 
   let catalog = {
     apiGateway: [],
     generic: []
   }
 
-  let gatewayUS = new AWS.APIGateway({ region: 'us-east-1' })
+  let promises = regions.map(element => {
+    return new AWS.APIGateway({ region: element }).getUsagePlans({}).promise().then(result => {
+      console.log(`--------------- USAGE PLANS`)
+      console.log(`usagePlans: ${JSON.stringify(result.items, null, 4)}`)
+      console.log(`--------------- RESULT: ${JSON.stringify(result)}`)
+      let usagePlans = result.items
+      for (let i = 0; i < usagePlans.length; i++) {
+        catalog.apiGateway.push(usagePlanToCatalogObject(usagePlans[i], swaggerFiles, sdkGeneration));
+      }
 
-  var promiseA = exports.gateway.getUsagePlans({}).promise().then(result => {
-    console.log(`-------------------------- USAGE PLANS`)
-    console.log(`usagePlans: ${JSON.stringify(result.items, null, 4)}`)
-    console.log(`--------------- RESULT: ${JSON.stringify(result)}`)
-    let usagePlans = result.items
-    for (let i = 0; i < usagePlans.length; i++) {
-      catalog.apiGateway.push(usagePlanToCatalogObject(usagePlans[i], swaggerFiles, sdkGeneration));
-    }
+      catalog.generic.push(
+        ...swaggerFiles.filter(s => s.generic).map(s => {
+          s.swagger = s.body
+          delete s.body
+          console.log(`This generic API has an id of ${s.id} and sdkGeneration[s.id] === ${sdkGeneration[s.id]}`)
 
-    catalog.generic.push(
-      ...swaggerFiles.filter(s => s.generic).map(s => {
-        s.swagger = s.body
-        delete s.body
-        console.log(`This generic API has an id of ${s.id} and sdkGeneration[s.id] === ${sdkGeneration[s.id]}`)
+          s.sdkGeneration = !!sdkGeneration[s.id]
+          if (!s.sdkGeneration) {
+            s.sdkGeneration = !!sdkGeneration[`${s.apiId}_${s.stage}`]
+          }
+          return s
+        })
+      )
 
-        s.sdkGeneration = !!sdkGeneration[s.id]
-        if (!s.sdkGeneration) {
-          s.sdkGeneration = !!sdkGeneration[`${s.apiId}_${s.stage}`]
-        }
-        return s
-      })
-    )
+    }).catch(/* istanbul ignore next */(error) => {
+      console.log('error getting usage plans:', error)
+    });
 
-    // return catalog
-  }).catch(/* istanbul ignore next */(error) => {
-    console.log('error getting usage plans:', error)
   });
 
-  var promiseB = gatewayUS.getUsagePlans({}).promise().then(result => {
-    console.log(`-------------------------- USAGE PLANS`)
-    console.log(`usagePlans: ${JSON.stringify(result.items, null, 4)}`)
-    console.log(`--------------- RESULT: ${JSON.stringify(result)}`)
-    let usagePlans = result.items
-    for (let i = 0; i < usagePlans.length; i++) {
-      catalog.apiGateway.push(usagePlanToCatalogObject(usagePlans[i], swaggerFiles, sdkGeneration));
-    }
-
-    catalog.generic.push(
-      ...swaggerFiles.filter(s => s.generic).map(s => {
-        s.swagger = s.body
-        delete s.body
-        console.log(`This generic API has an id of ${s.id} and sdkGeneration[s.id] === ${sdkGeneration[s.id]}`)
-
-        s.sdkGeneration = !!sdkGeneration[s.id]
-        if (!s.sdkGeneration) {
-          s.sdkGeneration = !!sdkGeneration[`${s.apiId}_${s.stage}`]
-        }
-        return s
-      })
-    )
-
-    // return catalog
-  }).catch(/* istanbul ignore next */(error) => {
-    console.log('error getting usage plans:', error)
-  });
-  return Promise.all([promiseA, promiseB]).then(function (values) {
+  return Promise.all(promises).then(function (values) {
     console.log(`-------- SA-US CATALOG: ${JSON.stringify(catalog, null, 4)}`)
     return catalog
   })

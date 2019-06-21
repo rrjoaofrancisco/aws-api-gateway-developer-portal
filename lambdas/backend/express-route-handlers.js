@@ -410,9 +410,9 @@ async function getAdminCatalogVisibility(req, res) {
                 )
             })
             await Promise.all(promises)
-
+            
             console.log(`visibility: ${JSON.stringify(visibility, null, 4)}`)
-
+            
             // mark every api gateway managed api-stage in the catalog as visible
             catalogObject.apiGateway.forEach((usagePlan) => {
                 usagePlan.apis.forEach((api) => {
@@ -421,14 +421,14 @@ async function getAdminCatalogVisibility(req, res) {
                             apiEntry.visibility = true
                             apiEntry.sdkGeneration = api.sdkGeneration || false
                         }
-
+                        
                         return apiEntry
                     })
                 })
             })
-
+            
             let usagePlans = await apiGW.getUsagePlans().promise()
-
+            
             // In the case of apiGateway APIs, the client doesn't know if there are usage plan associated or not
             // so we need to provide that information. This can't be merged with the above loop:
             // (catalogObject.apiGateway.forEach((usagePlan) => ...
@@ -436,7 +436,7 @@ async function getAdminCatalogVisibility(req, res) {
             // of both visible and non-visible APIs.
             visibility.apiGateway.map((apiEntry) => {
                 apiEntry.subscribable = false
-
+                
                 usagePlans.items.forEach((usagePlan) => {
                     usagePlan.apiStages.forEach((apiStage) => {
                         if (apiEntry.id === apiStage.apiId && apiEntry.stage === apiStage.stage) {
@@ -444,41 +444,41 @@ async function getAdminCatalogVisibility(req, res) {
                             apiEntry.usagePlanId = usagePlan.id
                             apiEntry.usagePlanName = usagePlan.name
                         }
-
+                        
                         apiEntry.sdkGeneration = !!apiEntry.sdkGeneration
                     })
                 })
-
+                
                 return apiEntry
             })
-
-            // mark every api in the generic catalog as visible
-            catalogObject.generic.forEach((catalogEntry) => {
-                if (!visibility.generic) {
-                    visibility.generic = {}
-                }
-
-                visibility.generic[catalogEntry.id] = {
-                    visibility: true,
-                    name: (catalogEntry.swagger && catalogEntry.swagger.info && catalogEntry.swagger.info.title) || 'Untitled'
-                }
-
-                if (catalogEntry.stage)
-                    visibility.generic[catalogEntry.id].stage = catalogEntry.stage
-                if (catalogEntry.apiId)
-                    visibility.generic[catalogEntry.id].apiId = catalogEntry.apiId
-                if (catalogEntry.sdkGeneration !== undefined) {
-                    visibility.apiGateway.map((api) => {
-                        console.log(api)
-                        console.log(catalogEntry)
-                        if (api.id === catalogEntry.apiId && api.stage === catalogEntry.stage) {
-                            api.sdkGeneration = catalogEntry.sdkGeneration
-                        }
-                        return api
-                    })
-                }
-            })
         }));
+
+        // mark every api in the generic catalog as visible
+        catalogObject.generic.forEach((catalogEntry) => {
+            if (!visibility.generic) {
+                visibility.generic = {}
+            }
+
+            visibility.generic[catalogEntry.id] = {
+                visibility: true,
+                name: (catalogEntry.swagger && catalogEntry.swagger.info && catalogEntry.swagger.info.title) || 'Untitled'
+            }
+
+            if (catalogEntry.stage)
+                visibility.generic[catalogEntry.id].stage = catalogEntry.stage
+            if (catalogEntry.apiId)
+                visibility.generic[catalogEntry.id].apiId = catalogEntry.apiId
+            if (catalogEntry.sdkGeneration !== undefined) {
+                visibility.apiGateway.map((api) => {
+                    console.log(api)
+                    console.log(catalogEntry)
+                    if (api.id === catalogEntry.apiId && api.stage === catalogEntry.stage) {
+                        api.sdkGeneration = catalogEntry.sdkGeneration
+                    }
+                    return api
+                })
+            }
+        })
 
         res.status(200).json(visibility)
     } catch (err) {

@@ -192,27 +192,17 @@ function buildCatalog(swaggerFiles, sdkGeneration) {
 
   let promises = regions.map(element => {
     return new AWS.APIGateway({ region: element }).getUsagePlans({}).promise().then(result => {
+      console.log('------------ MONTANDO CATALOGO DA REGIAO: ' + element)
       console.log(`--------------- USAGE PLANS`)
       console.log(`usagePlans: ${JSON.stringify(result.items, null, 4)}`)
       console.log(`--------------- RESULT: ${JSON.stringify(result)}`)
+      console.log('------------------ REGIAO ATUAL: ' + element)
       let usagePlans = result.items
       for (let i = 0; i < usagePlans.length; i++) {
         catalog.apiGateway.push(usagePlanToCatalogObject(usagePlans[i], swaggerFiles, sdkGeneration));
       }
 
-      catalog.generic.push(
-        ...swaggerFiles.filter(s => s.generic).map(s => {
-          s.swagger = s.body
-          delete s.body
-          console.log(`This generic API has an id of ${s.id} and sdkGeneration[s.id] === ${sdkGeneration[s.id]}`)
-
-          s.sdkGeneration = !!sdkGeneration[s.id]
-          if (!s.sdkGeneration) {
-            s.sdkGeneration = !!sdkGeneration[`${s.apiId}_${s.stage}`]
-          }
-          return s
-        })
-      )
+      console.log('------------ CATALOGO DA REGIAO: ', JSON.stringify(catalog))
 
     }).catch(/* istanbul ignore next */(error) => {
       console.log('error getting usage plans:', error)
@@ -220,7 +210,25 @@ function buildCatalog(swaggerFiles, sdkGeneration) {
 
   });
 
+  console.log('------------ PROMISSES: ', promises)
+
   return Promise.all(promises).then(function (values) {
+    catalog.generic.push(
+      ...swaggerFiles.filter(s => s.generic).map(s => {
+
+        s.swagger = s.body
+        console.log('------------- PRINT S com body: ', JSON.stringify(s))
+        delete s.body
+        console.log(`This generic API has an id of ${s.id} and sdkGeneration[s.id] === ${sdkGeneration[s.id]}`)
+
+        s.sdkGeneration = !!sdkGeneration[s.id]
+        if (!s.sdkGeneration) {
+          s.sdkGeneration = !!sdkGeneration[`${s.apiId}_${s.stage}`]
+        }
+        console.log('------------- PRINT S: ', JSON.stringify(s))
+        return s
+      })
+    )
     console.log(`-------- SA-US CATALOG: ${JSON.stringify(catalog, null, 4)}`)
     return catalog
   })
@@ -247,6 +255,8 @@ async function handler(event, context) {
     Body: JSON.stringify(catalog),
     ContentType: 'application/json'
   }
+
+  console.log('------------ VAI CHAMAR O UPLOAD DO CATALOGO PARA O S3')
 
   await exports.s3.upload(params).promise()
 }

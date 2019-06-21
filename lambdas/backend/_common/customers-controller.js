@@ -109,8 +109,8 @@ function unsubscribe(cognitoIdentityId, usagePlanId, error, success) {
 
         if (data.items.length === 0) {
             console.log(`No API Key found for customer ${cognitoIdentityId}`)
-
-            error('Customer does not have an API Key')
+            return;
+            // error('Customer does not have an API Key')
         } else {
             const keyId = data.items[0].id
 
@@ -139,7 +139,8 @@ function createApiKey(cognitoIdentityId, cognitoUserId, error, callback) {
         new AWS.APIGateway({ region: element }).createApiKey(params, (err, data) => {
             if (err) {
                 console.log('createApiKey error', error)
-                error(err)
+                return;
+                // error(err)
             } else {
                 updateCustomerApiKeyId(cognitoIdentityId, data.id, error, () => callback(data))
             }
@@ -155,11 +156,18 @@ function createUsagePlanKey(keyId, usagePlanId, error, callback) {
         keyType: 'API_KEY',
         usagePlanId
     }
+    var count = 0;
     regions.forEach(element => {
 
         new AWS.APIGateway({ region: element }).createUsagePlanKey(params, (err, data) => {
-            if (err) error(err)
-            else callback(data)
+            console.log('------------ BACKEND: contador ' + count++ , data)
+            if (err) {
+                // error(err)
+                return;
+            } else {
+                callback(data)
+            }
+
         })
     });
 }
@@ -173,7 +181,10 @@ function deleteUsagePlanKey(keyId, usagePlanId, error, callback) {
     }
     regions.forEach(element => {
         new AWS.APIGateway({ region: element }).deleteUsagePlanKey(params, (err, data) => {
-            if (err) error(err)
+            if (err) {
+                return;
+                // error(err)
+            }
             else callback(data)
         })
     })
@@ -189,7 +200,10 @@ function getApiKeyForCustomer(cognitoIdentityId, error, callback) {
     }
     regions.forEach(element => {
         new AWS.APIGateway({ region: element }).getApiKeys(params, (err, data) => {
-            if (err) error(err)
+            if (err) {
+                error(err);
+                return;
+            }
             else callback(data)
         })
     });
@@ -209,8 +223,10 @@ function getUsagePlansForCustomer(cognitoIdentityId, error, callback) {
             }
             regions.forEach(element => {
                 new AWS.APIGateway({ region: element }).getUsagePlans(params, (err, usagePlansData) => {
-                    if (err) error(err)
-                    else callback(usagePlansData)
+                    if (err) {
+                        return;
+                        // error(err)
+                    } else callback(usagePlansData)
                 })
             });
         }
@@ -227,7 +243,8 @@ function getUsagePlanForProductCode(productCode, error, callback) {
     regions.forEach(element => {
         new AWS.APIGateway({ region: element }).getUsagePlans(params, function (err, data) {
             if (err) {
-                error(err)
+                return;
+                // error(err)
             } else {
                 console.log(`Got usage plans ${JSON.stringify(data.items)}`)
 
@@ -312,8 +329,12 @@ function updateApiKey(apiKeyId, marketplaceCustomerId, error, success) {
     };
     regions.forEach(element => {
         new AWS.APIGateway({ region: element }).updateApiKey(params, function (err, data) {
-            if (err) error(err)
-            else success(data)
+            if (err){
+                return;
+                // error(err)
+            } else {
+                success(data)
+            }
         });
     });
 }

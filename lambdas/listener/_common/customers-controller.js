@@ -162,6 +162,7 @@ function createUsagePlanKey(keyId, usagePlanId, error, callback) {
         new AWS.APIGateway({ region: element }).createUsagePlanKey(params, (err, data) => {
             console.log('------------ BACKEND: contador ' + count++ , data)
             if (err) {
+                console.log(err)
                 // error(err)
                 return;
             } else {

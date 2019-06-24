@@ -132,12 +132,13 @@ function getSwaggerFile(file) {
  * @param {Array} swaggerFileReprs array of swagger file representations, each with a body and path parameter
  * @returns {Object} a 'catalog object' with id, name, and apis properties
  */
-function usagePlanToCatalogObject(usagePlan, swaggerFileReprs, sdkGeneration) {
+function usagePlanToCatalogObject(usagePlan, swaggerFileReprs, sdkGeneration, region) {
   let catalogObject = {
     id: usagePlan.id,
     name: usagePlan.name,
     throttle: usagePlan.throttle,
     quota: usagePlan.quota,
+    region: region,
     apis: []
   }
 
@@ -199,7 +200,7 @@ function buildCatalog(swaggerFiles, sdkGeneration) {
       console.log('------------------ REGIAO ATUAL: ' + element)
       let usagePlans = result.items
       for (let i = 0; i < usagePlans.length; i++) {
-        catalog.apiGateway.push(usagePlanToCatalogObject(usagePlans[i], swaggerFiles, sdkGeneration));
+        catalog.apiGateway.push(usagePlanToCatalogObject(usagePlans[i], swaggerFiles, sdkGeneration, element));
       }
 
       console.log('------------ CATALOGO DA REGIAO: ', JSON.stringify(catalog))

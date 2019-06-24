@@ -68,9 +68,9 @@ const SubscriptionButtons = observer(class SubscriptionButtons extends React.Com
     return (
       (api && isAuthenticated()) ? !api.generic ? (
         api.subscribed ? (
-          <Button onClick={() => unsubscribe(api.usagePlan.id)}>Unsubscribe</Button>
+          <Button onClick={() => unsubscribe(api.usagePlan)}>Unsubscribe</Button>
         ) : (
-          <Button onClick={() => subscribe(api.usagePlan.id)} >Subscribe</Button>
+          <Button onClick={() => subscribe(api.usagePlan)} >Subscribe</Button>
         )
       ) : <Header as='h4' color='grey'>This API is not configured for subscription from the portal.</Header> : null
     )

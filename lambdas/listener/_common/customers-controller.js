@@ -8,7 +8,9 @@ const dynamoDb = new AWS.DynamoDB.DocumentClient()
 
 const customersTable = process.env.CustomersTableName || 'DevPortalCustomers'
 
-const regions = ['us-east-1', 'sa-east-1']
+var regionApi = 'us-east-1';
+
+var cognitoUserId;
 
 function ensureCustomerItem(cognitoIdentityId, cognitoUserId, keyId, error) {
     // ensure user is tracked in customer table
@@ -18,6 +20,8 @@ function ensureCustomerItem(cognitoIdentityId, cognitoUserId, keyId, error) {
             Id: cognitoIdentityId
         }
     }
+
+    cognitoUserId = cognitoUserId
 
     return dynamoDb.get(getParams).promise()
         .then((data) => {
@@ -71,16 +75,17 @@ function getCognitoIdentityId(marketplaceCustomerId, error, callback) {
     })
 }
 
-function subscribe(cognitoIdentityId, usagePlanId, errFunc, callback) {
+function subscribe(cognitoIdentityId, usagePlanId, region, errFunc, callback) {
     console.log("-------- COGNITOID: " + cognitoIdentityId)
     console.log("-------- USAGEPLANID: " + usagePlanId)
+    regionApi = region
     getApiKeyForCustomer(cognitoIdentityId, errFunc, (data) => {
         console.log(`Get Api Key data ${JSON.stringify(data)}`)
 
         if (data.items.length === 0) {
             console.log(`No API Key found for customer ${cognitoIdentityId}`)
 
-            createApiKey(cognitoIdentityId, errFunc, (createData) => {
+            createApiKey(cognitoIdentityId, cognitoUserId, errFunc, (createData) => {
                 console.log(`Create API Key data: ${createData}`)
                 const keyId = createData.id
 
@@ -102,8 +107,8 @@ function subscribe(cognitoIdentityId, usagePlanId, errFunc, callback) {
     })
 }
 
-function unsubscribe(cognitoIdentityId, usagePlanId, error, success) {
-
+function unsubscribe(cognitoIdentityId, usagePlanId, region, error, success) {
+    regionApi = region
     getApiKeyForCustomer(cognitoIdentityId, error, (data) => {
         console.log(`Get Api Key data ${JSON.stringify(data)}`)
 
@@ -128,49 +133,42 @@ function createApiKey(cognitoIdentityId, cognitoUserId, error, callback) {
 
     // set the name to the cognito identity ID so we can query API Key by the cognito identity
     const params = {
-        description: `Dev Portal API Key for Identity Pool user ${cognitoIdentityId} / User Pool user ${cognitoUserId}`,
+        description: `Dev Portal API Key for Identity Pool user ${cognitoIdentityId} / User Pool user ${cognitoUserId} / Region of api ${regionApi}`,
         enabled: true,
         generateDistinctId: true,
         name: `${cognitoIdentityId}/${cognitoUserId}`
     }
 
-    regions.forEach(element => {
 
-        new AWS.APIGateway({ region: element }).createApiKey(params, (err, data) => {
-            if (err) {
-                console.log('createApiKey error', error)
-                return;
-                // error(err)
-            } else {
-                updateCustomerApiKeyId(cognitoIdentityId, data.id, error, () => callback(data))
-            }
-        })
-    });
+    new AWS.APIGateway({ region: regionApi }).createApiKey(params, (err, data) => {
+        if (err) {
+            error(err)
+        } else {
+            updateCustomerApiKeyId(cognitoIdentityId, data.id, error, () => {
+                console.log(`<<<<<< CALLBACK:::::: `, data)
+                callback(data)
+            })
+        }
+    })
 }
 
 function createUsagePlanKey(keyId, usagePlanId, error, callback) {
-    console.log(`Creating usage plan key for key id ${keyId} and usagePlanId ${usagePlanId}`)
+    console.log(`Creating usage plan key for key id ${keyId}, usagePlanId ${usagePlanId} and region ${regionApi}`)
 
     const params = {
         keyId,
         keyType: 'API_KEY',
         usagePlanId
     }
-    var count = 0;
-    regions.forEach(element => {
 
-        new AWS.APIGateway({ region: element }).createUsagePlanKey(params, (err, data) => {
-            console.log('------------ BACKEND: contador ' + count++ , data)
-            if (err) {
-                console.log(err)
-                // error(err)
-                return;
-            } else {
-                callback(data)
-            }
+    new AWS.APIGateway({ region: regionApi }).createUsagePlanKey(params, (err, data) => {
+        if (err) {
+            error(err)
+        } else {
+            callback(data)
+        }
 
-        })
-    });
+    })
 }
 
 function deleteUsagePlanKey(keyId, usagePlanId, error, callback) {
@@ -180,34 +178,28 @@ function deleteUsagePlanKey(keyId, usagePlanId, error, callback) {
         keyId,
         usagePlanId
     }
-    regions.forEach(element => {
-        new AWS.APIGateway({ region: element }).deleteUsagePlanKey(params, (err, data) => {
-            if (err) {
-                return;
-                // error(err)
-            }
-            else callback(data)
-        })
+    new AWS.APIGateway({ region: regionApi }).deleteUsagePlanKey(params, (err, data) => {
+        if (err) {
+            error(err)
+        }
+        else callback(data)
     })
 }
 
 function getApiKeyForCustomer(cognitoIdentityId, error, callback) {
-    console.log(`Getting API Key for customer  ${cognitoIdentityId}`)
+    console.log(`Getting API Key for customer  ${cognitoIdentityId} and region ${regionApi}`)
 
     const params = {
         limit: 1,
         includeValues: true,
         nameQuery: cognitoIdentityId
     }
-    regions.forEach(element => {
-        new AWS.APIGateway({ region: element }).getApiKeys(params, (err, data) => {
-            if (err) {
-                error(err);
-                return;
-            }
-            else callback(data)
-        })
-    });
+    new AWS.APIGateway({ region: regionApi }).getApiKeys(params, (err, data) => {
+        if (err) {
+            error(err);
+        }
+        else callback(data)
+    })
 }
 
 function getUsagePlansForCustomer(cognitoIdentityId, error, callback) {
@@ -222,14 +214,13 @@ function getUsagePlansForCustomer(cognitoIdentityId, error, callback) {
                 keyId,
                 limit: 1000
             }
-            regions.forEach(element => {
-                new AWS.APIGateway({ region: element }).getUsagePlans(params, (err, usagePlansData) => {
-                    if (err) {
-                        return;
-                        // error(err)
-                    } else callback(usagePlansData)
-                })
-            });
+            new AWS.APIGateway({ region: regionApi }).getUsagePlans(params, (err, usagePlansData) => {
+                if (err) {
+                    // error(err)
+                    console.log(err)
+                    return;
+                } else callback(usagePlansData)
+            })
         }
     })
 }
@@ -241,27 +232,26 @@ function getUsagePlanForProductCode(productCode, error, callback) {
     var params = {
         limit: 1000
     };
-    regions.forEach(element => {
-        new AWS.APIGateway({ region: element }).getUsagePlans(params, function (err, data) {
-            if (err) {
-                return;
-                // error(err)
-            } else {
-                console.log(`Got usage plans ${JSON.stringify(data.items)}`)
+    new AWS.APIGateway({ region: regionApi }).getUsagePlans(params, function (err, data) {
+        if (err) {
+            // error(err)
+            console.log(err)
+            return;
+        } else {
+            console.log(`Got usage plans ${JSON.stringify(data.items)}`)
 
-                // note: ensure that only one usage plan maps to a given marketplace product code
-                const usageplan = data.items.find(function (item) {
-                    return item.productCode !== undefined && item.productCode === productCode
-                })
-                if (usageplan !== undefined) {
-                    console.log(`Found usage plan matching ${productCode}`)
-                    callback(usageplan)
-                } else {
-                    console.log(`Couldn't find usageplan matching product code ${productCode}`)
-                    error(`Couldn't find usageplan matching product code ${productCode}`)
-                }
+            // note: ensure that only one usage plan maps to a given marketplace product code
+            const usageplan = data.items.find(function (item) {
+                return item.productCode !== undefined && item.productCode === productCode
+            })
+            if (usageplan !== undefined) {
+                console.log(`Found usage plan matching ${productCode}`)
+                callback(usageplan)
+            } else {
+                console.log(`Couldn't find usageplan matching product code ${productCode}`)
+                error(`Couldn't find usageplan matching product code ${productCode}`)
             }
-        });
+        }
     });
 }
 
@@ -290,7 +280,7 @@ function updateCustomerMarketplaceId(cognitoIdentityId, marketplaceCustomerId, e
                 if (data.items.length === 0) {
                     console.log(`No API Key found for customer ${cognitoIdentityId}`)
 
-                    createApiKey(cognitoIdentityId, errFunc, (createData) => {
+                    createApiKey(cognitoIdentityId, cognitoUserId, errFunc, (createData) => {
                         console.log(`Create API Key data: ${createData}`)
                         const keyId = createData.id
 
@@ -328,11 +318,12 @@ function updateApiKey(apiKeyId, marketplaceCustomerId, error, success) {
             }
         ]
     };
-    regions.forEach(element => {
-        new AWS.APIGateway({ region: element }).updateApiKey(params, function (err, data) {
-            if (err) error(err)
-            else success(data)
-        });
+    new AWS.APIGateway({ region: regionApi }).updateApiKey(params, function (err, data) {
+        if (err) {
+            error(err)
+        } else {
+            success(data)
+        }
     });
 }
 
@@ -358,16 +349,6 @@ function updateCustomerApiKeyId(cognitoIdentityId, apiKeyId, error, success) {
         }
     })
 }
-
-// function getUsagePlans(error, callback) {
-//     const params = {
-//         limit: 1000
-//     }
-//     apigateway.getUsagePlans(params, (err, data) => {
-//         if (err) error(err)
-//         else callback(data)
-//     })
-// }
 
 module.exports = {
     ensureCustomerItem,

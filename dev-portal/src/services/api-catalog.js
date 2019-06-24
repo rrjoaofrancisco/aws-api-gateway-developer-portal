@@ -140,15 +140,15 @@ export function getSubscribedUsagePlan(usagePlanId) {
   return store.subscriptions.find(sub => sub.id === usagePlanId)
 }
 
-export function subscribe(usagePlanId) {
+export function subscribe(usagePlan) {
   return apiGatewayClient()
-    .then(apiGatewayClient => apiGatewayClient.put('/subscriptions/' + usagePlanId, {}, {}))
+    .then(apiGatewayClient => apiGatewayClient.put('/subscriptions/' + usagePlan.id, {}, {region: usagePlan.region}))
     .then(() => updateSubscriptions(true))
 }
 
-export function unsubscribe(usagePlanId) {
+export function unsubscribe(usagePlan) {
   return apiGatewayClient()
-    .then(apiGatewayClient => apiGatewayClient.delete(`/subscriptions/${usagePlanId}`, {}, {}))
+    .then(apiGatewayClient => apiGatewayClient.delete(`/subscriptions/${usagePlan.id}`, {}, {region: usagePlan.region}))
     .then(() => updateSubscriptions(true))
 }
 
@@ -167,12 +167,12 @@ export function updateApiKey(bustCache) {
 }
 let apiKeyPromiseCache
 
-export function fetchUsage(usagePlanId) {
+export function fetchUsage(usagePlan) {
   const date = new Date()
   const start = new Date(date.getFullYear(), date.getMonth(), 1).toJSON().split('T')[0]
   const end = date.toJSON().split('T')[0]
   return apiGatewayClient()
-    .then(apiGatewayClient => apiGatewayClient.get('/subscriptions/' + usagePlanId + '/usage', { start, end }, {}))
+    .then(apiGatewayClient => apiGatewayClient.get('/subscriptions/' + usagePlan.id + '/usage', { start, end }, {region: usagePlan.region}))
 }
 
 export function mapUsageByDate(usage, usedOrRemaining) {

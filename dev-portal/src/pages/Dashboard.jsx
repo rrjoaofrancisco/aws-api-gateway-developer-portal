@@ -16,7 +16,7 @@ import { store } from 'services/state'
 import _ from 'lodash'
 
 function loadUsage(usagePlan, canvasId) {
-  fetchUsage(usagePlan.id)
+  fetchUsage(usagePlan)
     .then((result) => {
       const data = mapUsageByDate(result.data, 'used')
       const ctx = document.getElementById(canvasId)

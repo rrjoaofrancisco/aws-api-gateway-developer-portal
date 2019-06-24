@@ -30,6 +30,7 @@ function getCognitoUserId(req) {
         userPoolId = userPoolIdParts[userPoolIdParts.length - 1],
         userPoolUserId = parts[parts.length - 1]
 
+    console.log(`>>> PARTS::: ${parts}`)
     return userPoolUserId
 }
 
@@ -50,6 +51,7 @@ function postSignIn(req, res) {
     console.log(`POST /signin for Cognito ID: ${cognitoIdentityId}`)
 
     const cognitoUserId = getCognitoUserId(req)
+    console.log(`>>> COGNITO USER ID 1 ::: ${cognitoUserId}`)
 
     function errFunc(data) {
         console.log(`error: ${data}`)
@@ -59,6 +61,7 @@ function postSignIn(req, res) {
     // ensure an API Key exists for this customer and that the Cognito identity and API Key Id are tracked in DDB
     customersController.getApiKeyForCustomer(cognitoIdentityId, errFunc, (data) => {
         console.log(`Get Api Key data ${JSON.stringify(data)}`)
+        console.log(`>>> COGNITO USER ID 2 ::: ${cognitoUserId}`)
 
         if (data.items.length === 0) {
             console.log(`No API Key found for customer ${cognitoIdentityId}`)
@@ -126,9 +129,12 @@ function getSubscriptions(req, res) {
 }
 
 function putSubscription(req, res) {
+    console.log('>>>>>>>>> REQ BODY: ', JSON.stringify(req.body))
     const cognitoIdentityId = getCognitoIdentityId(req)
     console.log(`PUT /subscriptions for Cognito ID: ${cognitoIdentityId}`)
     const usagePlanId = req.params.usagePlanId
+    const region = req.body.region
+    const cognitoUserId = getCognitoUserId(req)
     getUsagePlanFromCatalog(usagePlanId).then(async (catalogUsagePlan) => {
         const isUsagePlanInCatalog = Boolean(catalogUsagePlan)
 
@@ -149,7 +155,7 @@ function putSubscription(req, res) {
             res.status(404).json({ error: 'Invalid Usage Plan ID' })
             // allow subscription if (the usage plan exists, at least 1 of its apis are visible)
         } else {
-            customersController.subscribe(cognitoIdentityId, usagePlanId, error, success)
+            customersController.subscribe(cognitoIdentityId, usagePlanId, region, cognitoUserId, error, success)
         }
     })
 }

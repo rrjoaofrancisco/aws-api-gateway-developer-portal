@@ -22,7 +22,7 @@ dev-portal/node_modules/swagger-ui/*
 /dev-portal/coverage
 
 # details about setup needed for local dev; these are sensitive, do not commit them!
-/dev-portal/deployer.config.js
+# /dev-portal/deployer.config.js
 /dev-portal/public/config.js
 
 # misc

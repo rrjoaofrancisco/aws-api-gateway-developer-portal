@@ -30,7 +30,8 @@
     "test": "react-scripts test",
     "cover": "react-scripts test --coverage",
     "coverage": "cover",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "release-start": "npm run release && npm run start"
   },
   "eslintConfig": {
     "extends": "react-app"

@@ -12,6 +12,7 @@ const baseUrl = `http://${domain}/`
 
 const feedbackEnabled = !!process.env['FeedbackSnsTopicArn']
 const regions = ['us-east-1', 'sa-east-1']
+const defaultRegion = 'us-east-1'
 
 function getCognitoIdentityId(req) {
     return req.apiGateway.event.requestContext.identity.cognitoIdentityId
@@ -42,8 +43,17 @@ function getCognitoKey(req) {
 }
 
 function getUsagePlanFromCatalog(usagePlanId) {
-    return catalog()
-        .then((catalog) => catalog.apiGateway.find(usagePlan => usagePlan.id === usagePlanId))
+    console.log('>>> CHEGUEI AQUI NO USAGE PLAN FROM CATALOG::: ', usagePlanId)
+    let catalogo = catalog()
+        .then((catalog) => {
+            catalog.apiGateway.find(usagePlan => usagePlan.id === usagePlanId)
+            
+        }).catch((error) => {
+            console.log('>>> ERROR AO PEGAR O PLANO DE USO NO CATALOGO', error)
+        })
+
+    console.log(catalogo)
+    return catalogo
 }
 
 function postSignIn(req, res) {
@@ -59,7 +69,7 @@ function postSignIn(req, res) {
     }
 
     // ensure an API Key exists for this customer and that the Cognito identity and API Key Id are tracked in DDB
-    customersController.getApiKeyForCustomer(cognitoIdentityId, errFunc, (data) => {
+    customersController.getApiKeyForCustomer(cognitoIdentityId, defaultRegion, errFunc).then((data) => {
         console.log(`Get Api Key data ${JSON.stringify(data)}`)
         console.log(`>>> COGNITO USER ID 2 ::: ${cognitoUserId}`)
 
@@ -81,6 +91,8 @@ function postSignIn(req, res) {
             customersController.ensureCustomerItem(cognitoIdentityId, cognitoUserId, keyId, errFunc)
                 .then(() => res.status(200).json({}))
         }
+    }).catch((error) => {
+        console.warn('postSignIn error: ', error)
     })
 }
 
@@ -100,7 +112,7 @@ function getApiKey(req, res) {
         res.status(500).json(data)
     }
 
-    customersController.getApiKeyForCustomer(cognitoIdentityId, errFunc, (data) => {
+    customersController.getApiKeyForCustomer(cognitoIdentityId, defaultRegion, errFunc).then((data) => {
         if (data.items.length === 0) {
             res.status(404).json({ error: 'No API Key for customer' })
         } else {
@@ -111,6 +123,8 @@ function getApiKey(req, res) {
             }
             res.status(200).json(key)
         }
+    }).catch((error) => {
+        console.warn('getApiKey error: ', error)
     })
 }
 
@@ -122,10 +136,30 @@ function getSubscriptions(req, res) {
         console.log(`error: ${data}`)
         res.status(500).json(data)
     }
+    let promises = regions.map(element => {
+        return new Promise((resolve, reject) => {
+            customersController.getUsagePlansForCustomer(cognitoIdentityId, element, errFunc)
+                .then((data) => {
+                    console.log('>>>>> SUBSCRIPTIONS::: ', JSON.stringify(data))
+                    resolve(data.items)
 
-    customersController.getUsagePlansForCustomer(cognitoIdentityId, errFunc, (data) => {
-        res.status(200).json(data.items)
+                }).catch((error) => {
+                    reject(error)
+                })
+
+        })
     })
+
+    Promise.all(promises).then((values) => {
+        values = values.reduce((acc, val) => acc.concat(val), []);
+        console.log('>>>>>>>>> DATARESPONSE ITEMS::: ', values)
+
+        res.status(200).json(values)
+
+    }).catch((error) => {
+        console.warn('Error getSubscriptions', error)
+    })
+
 }
 
 function putSubscription(req, res) {
@@ -177,7 +211,7 @@ function getUsage(req, res) {
         if (!isUsagePlanInCatalog) {
             res.status(404).json({ error: 'Invalid Usage Plan ID' })
         } else {
-            customersController.getApiKeyForCustomer(cognitoIdentityId, errFunc, (data) => {
+            customersController.getApiKeyForCustomer(cognitoIdentityId, null, errFunc).then((data) => {
                 const keyId = data.items[0].id
 
                 const params = {
@@ -198,6 +232,8 @@ function getUsage(req, res) {
                         }
                     })
                 });
+            }).catch((error) => {
+                console.warn('getUsage error: ', error)
             })
         }
     })
@@ -218,11 +254,13 @@ function deleteSubscription(req, res) {
     }
 
     getUsagePlanFromCatalog(usagePlanId).then((usagePlan) => {
+        console.log('>>> GETUSAGEPLANFROMCATALOG::: ', usagePlan)
         const isUsagePlanInCatalog = Boolean(usagePlan)
 
         if (!isUsagePlanInCatalog) {
             res.status(404).json({ error: 'Invalid Usage Plan ID' })
         } else {
+            console.log(`>>>> DELETING SUBSCRIPTION FROM COGNITO IDENTITY ID ${cognitoIdentityId} AND USAGE PLAN ID ${usagePlanId}`)
             customersController.unsubscribe(cognitoIdentityId, usagePlanId, error, success)
         }
     })
@@ -416,9 +454,9 @@ async function getAdminCatalogVisibility(req, res) {
                 )
             })
             await Promise.all(promises)
-            
+
             console.log(`visibility: ${JSON.stringify(visibility, null, 4)}`)
-            
+
             // mark every api gateway managed api-stage in the catalog as visible
             catalogObject.apiGateway.forEach((usagePlan) => {
                 usagePlan.apis.forEach((api) => {
@@ -427,14 +465,14 @@ async function getAdminCatalogVisibility(req, res) {
                             apiEntry.visibility = true
                             apiEntry.sdkGeneration = api.sdkGeneration || false
                         }
-                        
+
                         return apiEntry
                     })
                 })
             })
-            
+
             let usagePlans = await apiGW.getUsagePlans().promise()
-            
+
             // In the case of apiGateway APIs, the client doesn't know if there are usage plan associated or not
             // so we need to provide that information. This can't be merged with the above loop:
             // (catalogObject.apiGateway.forEach((usagePlan) => ...
@@ -442,7 +480,7 @@ async function getAdminCatalogVisibility(req, res) {
             // of both visible and non-visible APIs.
             visibility.apiGateway.map((apiEntry) => {
                 apiEntry.subscribable = false
-                
+
                 usagePlans.items.forEach((usagePlan) => {
                     usagePlan.apiStages.forEach((apiStage) => {
                         if (apiEntry.id === apiStage.apiId && apiEntry.stage === apiStage.stage) {
@@ -450,11 +488,11 @@ async function getAdminCatalogVisibility(req, res) {
                             apiEntry.usagePlanId = usagePlan.id
                             apiEntry.usagePlanName = usagePlan.name
                         }
-                        
+
                         apiEntry.sdkGeneration = !!apiEntry.sdkGeneration
                     })
                 })
-                
+
                 return apiEntry
             })
         }));

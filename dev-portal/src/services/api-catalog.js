@@ -127,6 +127,7 @@ export function updateVisibility(cacheBust = false) {
  * @param {Boolean} [bustCache=false]   Ignore the cache and re-make the network call. Defaults to false.
  */
 export function updateSubscriptions(bustCache = false) {
+  console.log('CHEGOU AQUI')
   let subscriptionsOrPromise = store.subscriptions.length ? store.subscriptions : subscriptionsPromiseCache
   if (!bustCache && subscriptionsOrPromise) return Promise.resolve(subscriptionsOrPromise)
 
@@ -150,6 +151,9 @@ export function unsubscribe(usagePlan) {
   return apiGatewayClient()
     .then(apiGatewayClient => apiGatewayClient.delete(`/subscriptions/${usagePlan.id}`, {}, {region: usagePlan.region}))
     .then(() => updateSubscriptions(true))
+    .catch((error) => {
+      console.log('deu erro', error)
+    })
 }
 
 /**

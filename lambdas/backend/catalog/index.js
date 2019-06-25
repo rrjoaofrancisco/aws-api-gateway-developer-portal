@@ -6,7 +6,7 @@ let AWS = require('aws-sdk'),
 
 let usagePlanCatalog = []
 
-const usagePlans = function() {
+const usagePlans = function () {
   // TODO: This was previously cached, and could be again, except that there's no mechanism to cache-bust the lambda
   // function when the user updates the catalog. This led to confusing behavior, so I removed it.
   console.log(`usagePlanCatalog: ${JSON.stringify(usagePlanCatalog, null, 4)}`)
@@ -20,20 +20,19 @@ const usagePlans = function() {
   return s3.getObject(params).promise()
     .then((catalog) => {
       let cleanCatalog = JSON.parse(catalog.Body.toString())
-      console.log(`catalog: ${ JSON.stringify(cleanCatalog, null, 4) }`)
+      console.log(`catalog: ${JSON.stringify(cleanCatalog, null, 4)}`)
       usagePlanCatalog = cleanCatalog
       return usagePlanCatalog
-    })
-    .catch((error) => {
+    }).catch((error) => {
       // don't break if there's no catalog file
       if (error.code === "NoSuchKey") {
         console.error('error: No catalog.json file found. Please upload an api definition to `catalog/`.')
 
         return []
       }
-      
+
       console.error('error:', error)
-      
+
       throw error
     })
 }

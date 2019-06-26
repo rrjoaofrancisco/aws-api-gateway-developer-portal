@@ -22,7 +22,7 @@ export function updateAllUserData(bustCache = true) {
     updateApiKey(bustCache)
   ]
 
-  if(isAdmin())
+  if (isAdmin())
     promises.push(updateVisibility(bustCache))
 
   return Promise.all(promises)
@@ -94,7 +94,7 @@ export function getApi(apiId, selectIt = false, stage, cacheBust = false) {
       let thisApi
 
       let allApis = [].concat(store.apiList.apiGateway, store.apiList.generic)
-  
+
       if (allApis.length) {
         if (apiId === 'ANY' || apiId === 'FIRST') {
           thisApi = allApis[0]
@@ -114,9 +114,9 @@ export function getApi(apiId, selectIt = false, stage, cacheBust = false) {
 }
 
 export function updateVisibility(cacheBust = false) {
-    return apiGatewayClient()
-        .then(app => app.get('/admin/catalog/visibility', {}, {}, {}))
-        .then(({data}) => (store.visibility = data))
+  return apiGatewayClient()
+    .then(app => app.get('/admin/catalog/visibility', {}, {}, {}))
+    .then(({ data }) => (store.visibility = data))
 }
 
 /* Subscription Utils */
@@ -143,17 +143,15 @@ export function getSubscribedUsagePlan(usagePlanId) {
 
 export function subscribe(usagePlan) {
   return apiGatewayClient()
-    .then(apiGatewayClient => apiGatewayClient.put('/subscriptions/' + usagePlan.id, {}, {region: usagePlan.region}))
+    .then(apiGatewayClient => apiGatewayClient.put('/subscriptions/' + usagePlan.id, {}, { region: usagePlan.region }))
     .then(() => updateSubscriptions(true))
 }
 
 export function unsubscribe(usagePlan) {
+  console.log('>>> UNSUBSCRIBE USAGEPLAN::: ', usagePlan)
   return apiGatewayClient()
-    .then(apiGatewayClient => apiGatewayClient.delete(`/subscriptions/${usagePlan.id}`, {}, {region: usagePlan.region}))
+    .then(apiGatewayClient => apiGatewayClient.delete('/subscriptions/' + usagePlan.id, {}, { region: usagePlan.region }))
     .then(() => updateSubscriptions(true))
-    .catch((error) => {
-      console.log('deu erro', error)
-    })
 }
 
 /**
@@ -167,7 +165,7 @@ export function updateApiKey(bustCache) {
 
   return apiGatewayClient()
     .then(apiGatewayClient => apiGatewayClient.get('/apikey', {}, {}, {}))
-    .then(({data}) => (store.apiKey = data.value))
+    .then(({ data }) => (store.apiKey = data.value))
 }
 let apiKeyPromiseCache
 
@@ -176,7 +174,7 @@ export function fetchUsage(usagePlan) {
   const start = new Date(date.getFullYear(), date.getMonth(), 1).toJSON().split('T')[0]
   const end = date.toJSON().split('T')[0]
   return apiGatewayClient()
-    .then(apiGatewayClient => apiGatewayClient.get('/subscriptions/' + usagePlan.id + '/usage', { start, end }, {region: usagePlan.region}))
+    .then(apiGatewayClient => apiGatewayClient.get('/subscriptions/' + usagePlan.id + '/usage', { start, end }, { region: usagePlan.region }))
 }
 
 export function mapUsageByDate(usage, usedOrRemaining) {
@@ -190,30 +188,30 @@ export function mapUsageByDate(usage, usedOrRemaining) {
       const date = dailyUsage[0]
       const used = dailyUsage[1]
       const remaining = dailyUsage[2]
-      
+
       if (!dates[date])
-      dates[date] = { used: 0, remaining: 0 }
+        dates[date] = { used: 0, remaining: 0 }
 
       dates[date].used += used
       dates[date].remaining += remaining
     })
   })
-  
+
   const usageByDate = Object.keys(dates).sort().map(date => [
-    parseInt(date, 10), 
-    dates[date].used, 
-    dates[date].remaining 
+    parseInt(date, 10),
+    dates[date].used,
+    dates[date].remaining
   ])
-  
+
   return usageByDate
 }
 
 function mapApiKeyUsageByDate(apiKeyUsage, startDate) {
   const apiKeyDate = new Date(startDate)
-  
+
   if (apiKeyUsage && !Array.isArray(apiKeyUsage[0]))
     apiKeyUsage = [apiKeyUsage]
-  
+
   return apiKeyUsage.map((usage) => {
     const date = apiKeyDate.setDate(apiKeyDate.getDate())
     const item = [date, ...usage]
@@ -228,7 +226,7 @@ export function confirmMarketplaceSubscription(usagePlanId, token) {
   if (!usagePlanId) {
     return
   }
-  
+
   return apiGatewayClient()
-    .then(apiGatewayClient => apiGatewayClient.put('/marketplace-subscriptions/' + usagePlanId, {}, {"token" : token}))
+    .then(apiGatewayClient => apiGatewayClient.put('/marketplace-subscriptions/' + usagePlanId, {}, { "token": token }))
 }

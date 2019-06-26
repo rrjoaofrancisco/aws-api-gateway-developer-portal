@@ -42,18 +42,8 @@ function getCognitoKey(req) {
     return req.apiGateway.event.requestContext.authorizer.claims.iss + ' ' + getCognitoUsername(req)
 }
 
-function getUsagePlanFromCatalog(usagePlanId) {
-    console.log('>>> CHEGUEI AQUI NO USAGE PLAN FROM CATALOG::: ', usagePlanId)
-    let catalogo = catalog()
-        .then((catalog) => {
-            catalog.apiGateway.find(usagePlan => usagePlan.id === usagePlanId)
-            
-        }).catch((error) => {
-            console.log('>>> ERROR AO PEGAR O PLANO DE USO NO CATALOGO', error)
-        })
-
-    console.log(catalogo)
-    return catalogo
+async function getUsagePlanFromCatalog(usagePlanId) {
+    return await catalog(true).then((catalog) => catalog.apiGateway.find(usagePlan => usagePlan.id === usagePlanId))
 }
 
 function postSignIn(req, res) {
@@ -98,7 +88,7 @@ function postSignIn(req, res) {
 
 function getCatalog(req, res) {
     console.log(`GET /catalog for Cognito ID: ${getCognitoIdentityId(req)}`)
-    catalog()
+    catalog(false)
         .then(catalog => res.status(200).json(catalog))
         .catch(error => res.status(error.statusCode).json(error))
 }
@@ -204,7 +194,7 @@ function getUsage(req, res) {
         res.status(500).json(data)
     }
 
-    getUsagePlanFromCatalog(usagePlanId).then((usagePlan) => {
+    getUsagePlanFromCatalog(usagePlanId).then(async (usagePlan) => {
         const isUsagePlanInCatalog = Boolean(usagePlan)
 
         // could error here if customer is not subscribed to usage plan, or save an extra request by just showing 0 usage
@@ -241,8 +231,10 @@ function getUsage(req, res) {
 
 function deleteSubscription(req, res) {
     const cognitoIdentityId = getCognitoIdentityId(req)
-    console.log(`DELETE /subscriptions for Cognito ID: ${cognitoIdentityId}`)
     const usagePlanId = req.params.usagePlanId
+    const region = req.body.region
+    console.log(req)
+    console.log(`DELETE /subscriptions for Cognito ID: ${cognitoIdentityId}, Usage Plan ID: ${usagePlanId} and Region: ${region}`)
 
     function error(data) {
         console.log(`error: ${data}`)
@@ -253,7 +245,7 @@ function deleteSubscription(req, res) {
         res.status(200).json(data)
     }
 
-    getUsagePlanFromCatalog(usagePlanId).then((usagePlan) => {
+    getUsagePlanFromCatalog(usagePlanId).then(async (usagePlan) => {
         console.log('>>> GETUSAGEPLANFROMCATALOG::: ', usagePlan)
         const isUsagePlanInCatalog = Boolean(usagePlan)
 
@@ -261,7 +253,7 @@ function deleteSubscription(req, res) {
             res.status(404).json({ error: 'Invalid Usage Plan ID' })
         } else {
             console.log(`>>>> DELETING SUBSCRIPTION FROM COGNITO IDENTITY ID ${cognitoIdentityId} AND USAGE PLAN ID ${usagePlanId}`)
-            customersController.unsubscribe(cognitoIdentityId, usagePlanId, error, success)
+            customersController.unsubscribe(cognitoIdentityId, usagePlanId, region, error, success)
         }
     })
 }
@@ -394,7 +386,7 @@ async function getSdk(req, res) {
     // we don't want to leak customer API shapes if they have privileged APIs not in the catalog
     let restApiId = req.params.id.split('_')[0],
         stageName = req.params.id.split('_')[1],
-        catalogObject = findApiInCatalog(restApiId, stageName, await catalog())
+        catalogObject = findApiInCatalog(restApiId, stageName, await catalog(false))
 
     if (!catalogObject) {
         res.status(400).json({ message: `API with ID (${restApiId}) and Stage (${stageName}) could not be found.` })
@@ -431,7 +423,7 @@ async function getAdminCatalogVisibility(req, res) {
     console.log(`GET /admin/catalog/visibility for Cognito ID: ${getCognitoIdentityId(req)}`)
     try {
         let visibility = { apiGateway: [] },
-            catalogObject = await catalog()
+            catalogObject = await catalog(false)
 
         await Promise.all(regions.map(async (element) => {
             let apiGW = new AWS.APIGateway({ region: element })
@@ -609,7 +601,7 @@ async function postAdminCatalogVisibility(req, res) {
 
 async function deleteAdminCatalogVisibility(req, res) {
     console.log(`DELETE /admin/catalog/visibility for Cognito ID: ${getCognitoIdentityId(req)}`)
-    const catalogObject = await catalog()
+    const catalogObject = await catalog(false)
 
     // for apigateway managed APIs, provide "apiId_stageName"
     // in the apiKey field

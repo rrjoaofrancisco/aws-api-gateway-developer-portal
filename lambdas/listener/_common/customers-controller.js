@@ -108,6 +108,7 @@ function subscribe(cognitoIdentityId, usagePlanId, region, cognitoUserId, errFun
 
 function unsubscribe(cognitoIdentityId, usagePlanId, region, error, success) {
     regionApi = region
+    console.log('>>> UNSUBSCRIBE REGION API::: ', region)
     getApiKeyForCustomer(cognitoIdentityId, regionApi, error).then((data) => {
         console.log(`Get Api Key data ${JSON.stringify(data)}`)
 

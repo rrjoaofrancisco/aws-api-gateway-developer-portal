@@ -180,7 +180,7 @@ function deleteUsagePlanKey(keyId, usagePlanId, error, callback) {
         keyId,
         usagePlanId
     }
-    new AWS.APIGateway({ region: regionApi }).deleteUsagePlanKey(params, (err, data) => {
+    new AWS.APIGateway({region: regionApi}).deleteUsagePlanKey(params, (err, data) => {
         if (err) {
             error(err)
         }

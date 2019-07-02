@@ -47,12 +47,12 @@ export default observer(function ApisMenu(props) {
       {loadingApis && <Loader active />}
       {(hasGatewayApis || hasGenericApis) ? (
         <React.Fragment>
-          <Menu.Item key="search" as={Link} to="/apis/search" active={props.path.url === '/apis/search'}>Search APIs</Menu.Item>
-          {hasGatewayApis && <ApiSubsection title="Subscribable" listOfApis={store.apiList.apiGateway} selectedApiId={selectedApiId} selectedStage={selectedStage} />}
-          {hasGenericApis && <GenericApiSubsection title="Not Subscribable" listOfApis={store.apiList.generic} selectedApiId={selectedApiId} />}
+          <Menu.Item key="search" as={Link} to="/apis/search" active={props.path.url === '/apis/search'}>Buscar APIs</Menu.Item>
+          {hasGatewayApis && <ApiSubsection title="Inscrições" listOfApis={store.apiList.apiGateway} selectedApiId={selectedApiId} selectedStage={selectedStage} />}
+          {hasGenericApis && <GenericApiSubsection title="Não inscritos" listOfApis={store.apiList.generic} selectedApiId={selectedApiId} />}
         </React.Fragment>
       ) : (
-        <p style={{ padding: "13px 16px", color: "whitesmoke" }}>No APIs Published</p>
+        <p style={{ padding: "13px 16px", color: "whitesmoke" }}>Nenhuma API publicada</p>
       )}
     </Menu>
   )

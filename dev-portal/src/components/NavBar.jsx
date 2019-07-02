@@ -17,6 +17,7 @@ import { fragments } from 'services/get-fragments'
 
 // components
 import Register from './Register'
+import './styles/NavBar.css'
 
 export const NavBar = observer(
   class NavBar extends React.Component {
@@ -29,15 +30,15 @@ export const NavBar = observer(
       return isAuthenticated() ?
         (
           <Menu.Menu position="right">
-            {isAdmin() && <Menu.Item as={Link} to="/admin">Admin Panel</Menu.Item>}
-            <Menu.Item key="dashboard" as={Link} to="/dashboard">My Dashboard</Menu.Item>
-            <Menu.Item key="signout" as="a" onClick={logout}>Sign Out</Menu.Item>
+            {isAdmin() && <Menu.Item as={Link} to="/admin">Painel de administração</Menu.Item>}
+            <Menu.Item key="dashboard" as={Link} to="/dashboard">Painel de controle</Menu.Item>
+            <Menu.Item key="signout" as="a" onClick={logout}>Sair</Menu.Item>
           </Menu.Menu>
         ) : (
           <Menu.Menu position="right">
             <Menu.Item key="register" as="a"
                        href={this.getCognitoUrl('login')}>
-                Sign In
+                Sair
             </Menu.Item>
             <Register />
           </Menu.Menu>
@@ -45,9 +46,9 @@ export const NavBar = observer(
     }
 
     render() {
-      return <Menu inverted borderless attached style={{ flex: "0 0 auto" }} >
+      return <Menu className="navbar-menu" inverted borderless attached>
         <Menu.Item as={Link} to="/">
-          <Image size='mini' src="/custom-content/nav-logo.png" style={{ paddingRight: "10px" }} />
+          <Image size='mini' src="/custom-content/code_white.svg" style={{ paddingRight: "10px" }} />
           {fragments.Home.title}
         </Menu.Item>
 

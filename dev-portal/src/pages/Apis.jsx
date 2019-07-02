@@ -54,11 +54,11 @@ export default observer(class ApisPage extends React.Component {
 
     if (store.apiList.loaded) {
       if (!store.apiList.apiGateway.length && !store.apiList.generic.length) {
-        errorHeader = `No APIs Published`
-        errorBody = `Your administrator hasn't added any APIs to your account. Please contact them to publish an API.`
+        errorHeader = `Nenhuma API publicada`
+        errorBody = `Seu administrador não adicionou nenhuma API à sua conta. Por favor, contate-o para publicar uma API.`
       } else if (!store.api) {
-        errorHeader = `No Such API`
-        errorBody = `The selected API doesn't exist.`
+        errorHeader = `API não encontrada.`
+        errorBody = `A API selecionada não existe.`
       }
     }
 

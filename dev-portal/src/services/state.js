@@ -13,7 +13,7 @@ function storeDefaults() {
   return {
     api: undefined,
     apiKey: undefined,
-    
+
     apiList: {
       loaded: false,
       apiGateway: [],
@@ -56,7 +56,7 @@ export const store = observable({
 
   /**
    * Reset specific keys on the store to their initial values
-   * 
+   *
    * @param {string[]} keys   The keys that should be reset. Accepts lodash paths. (e.g. )
    */
   reset(...keys) {
@@ -71,12 +71,12 @@ export const store = observable({
 })
 
 /**
- * 
+ *
  * A short-hand function for creating reactions with protections against cyclical errors.
- * 
+ *
  * @param {Function} triggerFn   A function that determines when fire the effectFn and what to pass to the effectFn.
  * @param {Function} effectFn   The side-effect to run when the data tracked by the triggerFn is changed.
- * 
+ *
  * A note on MobX reactions: the side effect will "only react to data that was accessed in the data expression" and will only fire "when the data returned by the expression has changed". (https://mobx.js.org/refguide/reaction.html)
  */
 function reactTo(triggerFn, effectFn) {
@@ -89,7 +89,7 @@ function reactTo(triggerFn, effectFn) {
       triggerFn,
       (data, action) => {
         // action.dispose() // clear this "listener" so we don't cycle
-        
+
         effectFn(data, action)
 
         // restartReaction() // restart the reaction after doing stuff to the data
@@ -115,20 +115,20 @@ reactTo(
 )
 
 /**
- * 
+ *
  */
 function fetchApiImage(apiList) {
   apiList.forEach(api => {
     if (!api.logo) {
       let specificLogo = `/custom-content/api-logos/${api.id}_${api.stage}.png`
-  
+
       // fetch automatically follows redirects; setting redirect to `manual` prevents this
       // we need to prevent it so that we can accurately determine if the image exists
       fetch(specificLogo, { headers: { Accept: "image/png" }, redirect: "manual" }).then(response => {
         if (response.ok)
           api.logo = specificLogo
 
-        else api.logo = '/custom-content/api-logos/default.png'
+        else api.logo = '/custom-content/code.svg'
       })
     }
   })
@@ -136,8 +136,8 @@ function fetchApiImage(apiList) {
 
 /**
  * A helper function that simple re-builds the subscribed status for each api in the catalog.
- * 
- * Should be run every time either the catalog updates or the 
+ *
+ * Should be run every time either the catalog updates or the
  */
 function updateSubscriptionStatus(usagePlans) {
   if (usagePlans)

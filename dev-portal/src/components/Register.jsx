@@ -13,6 +13,6 @@ export default class Register extends React.Component {
     render() {
         return this.props.signedIn ? <Redirect to='/apis'/> : (
             <Menu.Item key="register" as="a"
-                       href={`${cognitoDomain}/signup?response_type=token&client_id=${cognitoClientId}&redirect_uri=${this.redirectUri}`}>Register</Menu.Item>)
+                       href={`${cognitoDomain}/signup?response_type=token&client_id=${cognitoClientId}&redirect_uri=${this.redirectUri}`}>Registrar</Menu.Item>)
     }
 }

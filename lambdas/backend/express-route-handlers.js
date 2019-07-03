@@ -43,7 +43,7 @@ function getCognitoKey(req) {
 }
 
 async function getUsagePlanFromCatalog(usagePlanId) {
-    return await catalog(true).then((catalog) => catalog.apiGateway.find(usagePlan => usagePlan.id === usagePlanId))
+    return await catalog(false).then((catalog) => catalog.apiGateway.find(usagePlan => usagePlan.id === usagePlanId))
 }
 
 function postSignIn(req, res) {
@@ -188,6 +188,7 @@ function getUsage(req, res) {
     const cognitoIdentityId = getCognitoIdentityId(req)
     console.log(`GET /usage for Cognito ID: ${cognitoIdentityId}`)
     const usagePlanId = req.params.usagePlanId
+    console.log(' >>>>> DASHBOARD USAGEPLAN --- ', usagePlanId)
 
     function errFunc(data) {
         console.log(`error: ${data}`)
@@ -196,12 +197,12 @@ function getUsage(req, res) {
 
     getUsagePlanFromCatalog(usagePlanId).then(async (usagePlan) => {
         const isUsagePlanInCatalog = Boolean(usagePlan)
-
+        console.log(' >>>>> DASHBOARD USAGEPLAN OBJ--- ', JSON.stringify(usagePlan))
         // could error here if customer is not subscribed to usage plan, or save an extra request by just showing 0 usage
         if (!isUsagePlanInCatalog) {
             res.status(404).json({ error: 'Invalid Usage Plan ID' })
         } else {
-            customersController.getApiKeyForCustomer(cognitoIdentityId, null, errFunc).then((data) => {
+            customersController.getApiKeyForCustomer(cognitoIdentityId, usagePlan.region, errFunc).then((data) => {
                 const keyId = data.items[0].id
 
                 const params = {
@@ -211,17 +212,15 @@ function getUsage(req, res) {
                     keyId,
                     limit: 1000
                 }
-                regions.forEach(element => {
-                    new AWS.APIGateway({ region: element }).getUsage(params, (err, usageData) => {
-                        if (err) {
-                            console.log(`get usage err ${JSON.stringify(err)}`)
-                            errFunc(err)
-                        } else {
-                            console.log(`get usage data ${JSON.stringify(usageData)}`)
-                            res.status(200).json(usageData)
-                        }
-                    })
-                });
+                exports.apigateway.getUsage(params, (err, usageData) => {
+                    if (err) {
+                        console.log(`get usage err ${JSON.stringify(err)}`)
+                        errFunc(err)
+                    } else {
+                        console.log(`get usage data ${JSON.stringify(usageData)}`)
+                        res.status(200).json(usageData)
+                    }
+                })
             }).catch((error) => {
                 console.warn('getUsage error: ', error)
             })
@@ -232,9 +231,9 @@ function getUsage(req, res) {
 function deleteSubscription(req, res) {
     const cognitoIdentityId = getCognitoIdentityId(req)
     const usagePlanId = req.params.usagePlanId
-    const region = req.body.region
-    console.log(req)
-    console.log(`DELETE /subscriptions for Cognito ID: ${cognitoIdentityId}, Usage Plan ID: ${usagePlanId} and Region: ${region}`)
+    // const region = req.body.region
+    console.log('DELETE SUBSCRIPTION', JSON.stringify(req.params))
+    console.log(`DELETE /subscriptions for Cognito ID: ${cognitoIdentityId}, Usage Plan ID: ${usagePlanId}`)
 
     function error(data) {
         console.log(`error: ${data}`)
@@ -253,7 +252,7 @@ function deleteSubscription(req, res) {
             res.status(404).json({ error: 'Invalid Usage Plan ID' })
         } else {
             console.log(`>>>> DELETING SUBSCRIPTION FROM COGNITO IDENTITY ID ${cognitoIdentityId} AND USAGE PLAN ID ${usagePlanId}`)
-            customersController.unsubscribe(cognitoIdentityId, usagePlanId, region, error, success)
+            customersController.unsubscribe(cognitoIdentityId, usagePlanId, usagePlan.region, error, success)
         }
     })
 }

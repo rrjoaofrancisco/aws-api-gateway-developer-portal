@@ -128,7 +128,7 @@ function fetchApiImage(apiList) {
         if (response.ok)
           api.logo = specificLogo
 
-        else api.logo = '/custom-content/code.svg'
+        else api.logo = '/custom-content/api-logos/default.png'
       })
     }
   })

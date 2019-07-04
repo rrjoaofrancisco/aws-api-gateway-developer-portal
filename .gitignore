@@ -1,10 +1,7 @@
 # top-level and lambda function specific
 /node_modules
 /coverage
-/lambdas/static-asset-uploader/build/config.js
-# /lambdas/static-asset-uploader/build/static/css/*
-# /lambdas/static-asset-uploader/build/static/js/*
-# /lambdas/static-asset-uploader/build/precache*
+/lambdas/static-asset-uploader/build/*
 /lambdas/coverage
 
 # devportal specific

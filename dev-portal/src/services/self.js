@@ -100,7 +100,7 @@ function setCredentials() {
 
       initApiGatewayClient(AWS.config.credentials)
       updateAllUserData()
-  
+
       return apiGatewayClient()
         .then(apiGatewayClient => apiGatewayClient.post('/signin', {}, {}, {}))
     })

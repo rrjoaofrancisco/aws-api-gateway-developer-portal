@@ -51,18 +51,18 @@ export default observer(class ApiSearch extends Component {
   createSearchCategories = (apiGateway, generic) => {
 
     let categories = {
-      "Subscribable": {
-        "name": "Subscribable",
+      "Registrável": {
+        "name": "Registrável",
         "results": []
       },
-      "Not Subscribable": {
-        "name": "Not Subscribable",
+      "Não registrável": {
+        "name": "Não registrável",
         "results": []
       }
     }
 
     apiGateway.forEach(({ id, stage, swagger, subscribed, usagePlan }) => {
-      categories.Subscribable.results.push({
+      categories['Registrável'].results.push({
         url: `/apis/${id}/${stage}`,
         title: `${swagger.info.title} - ${stage}`,
         stage: `${stage}`,
@@ -77,17 +77,17 @@ export default observer(class ApiSearch extends Component {
         searchable: `${JSON.stringify(swagger)}${stage || ''}`
       }
       if (stage) api.stage = stage
-      categories["Not Subscribable"].results.push(api)
+      categories["Não registrável"].results.push(api)
     })
 
     this.setState((prev) => ({ ...prev, categories }), () => { console.log(this.state.categories) })
   }
 
-  
+
   handleResultSelect = (e, { result }) => {
     console.log(result)
   }
-  
+
   handleSearchChange = (e, { value }) => {
     this.setState(({ search: { isLoading, ...searchRest }, ...rest }) => ({
       ...rest,
@@ -96,22 +96,22 @@ export default observer(class ApiSearch extends Component {
         isLoading: true,
         value
       }}))
-    
+
     setTimeout(() => {
       if (this.state.search.value.length < 1) return this.resetComponent()
-      
+
       const re = new RegExp(_.escapeRegExp(this.state.search.value), 'i')
       const isMatch = result => re.test(result.title) || re.test(result.searchable)
-      
+
       const filteredResults = _.reduce(
         this.state.categories,
         (memo, data, name) => {
           const results = _.filter(data.results, isMatch)
           if (results.length) memo[name] = { name, results } // eslint-disable-line no-param-reassign
-          
+
           return memo
         }, {})
-        
+
         this.setState(({ search: { value }, ...rest }) => ({
           ...rest,
           search: { isLoading: false, value },
@@ -127,24 +127,28 @@ export default observer(class ApiSearch extends Component {
       const { results } = this.state
 
       return (
-        <div style={{ display: "flex", flex: "1 1 auto", overflow: "hidden" }}>
-        <ApisMenu path={this.props.match} />
-        <Grid style={{padding: '2em'}}>
-          <Grid.Column>
-            <Search
-              category
-              loading={isLoading}
-              onResultSelect={this.handleResultSelect}
-              showNoResults={!isLoading}
-              onSearchChange={_.debounce(this.handleSearchChange, 500, { leading: true })}
-              results={results}
-              resultRenderer={resultRenderer}
-              value={value}
-              {...this.props}
-              />
-          </Grid.Column>
-        </Grid>
-      </div>
-    );
-  }
+        <div style={{ flex: "1 1 auto", width: "calc(100% - 14em)", overflow: "hidden", position: "absolute", height: "calc(100vh - 100px)" }}>
+          <Grid column={1} style={{padding: '2em', position: "absolute", width: "100%", zIndex: "998" }}>
+            <Grid.Row>
+              <Grid.Column>
+                <Search
+                  input={{ fluid: true, icon: 'search', iconPosition: 'left' }}
+                  category
+                  placeholder={"Pesquise com o nome da API"}
+                  loading={isLoading}
+                  onResultSelect={this.handleResultSelect}
+                  showNoResults={!isLoading}
+                  noResultsMessage={"Nenhum resultado encontrado."}
+                  onSearchChange={_.debounce(this.handleSearchChange, 500, { leading: true })}
+                  results={results}
+                  resultRenderer={resultRenderer}
+                  value={value}
+                  {...this.props}
+                  />
+              </Grid.Column>
+            </Grid.Row>
+          </Grid>
+        </div>
+      );
+    }
 })

@@ -4,7 +4,7 @@
 import React from 'react'
 
 // semantic-ui
-import { Button, Header, Image, Container } from 'semantic-ui-react'
+import { Button, Header, Image, Container, Loader } from 'semantic-ui-react'
 
 // services
 import { subscribe, unsubscribe } from 'services/api-catalog'
@@ -28,7 +28,7 @@ const InfoReplacement = observer(({ specSelectors }) => {
   const externalDocs = specSelectors.externalDocs()
 
   return (
-    <Container fluid textAlign='left' className="fixfloat" style={{ padding: "40px 0px" }}>
+    <Container fluid textAlign='left' className="fixfloat" style={{ padding: "40px 0px", marginTop: "70px" }}>
       <div style={{ display: "flex" }}>
         <div style={{ flex: "0 0 auto", marginRight: "20px" }}>
           <Image size='small' src={store.api.logo} />
@@ -38,17 +38,17 @@ const InfoReplacement = observer(({ specSelectors }) => {
           <div style={{ display: "flex" }}>
             <div style={{ marginRight: "20px" }}>
               {store.api.generic && (
-                <p style={{ fontWeight: "bold" }}>Version</p>
+                <p style={{ fontWeight: "bold" }}>Versão</p>
               )}
               <p style={{ fontWeight: "bold" }}>Endpoint</p>
-              {/* <p style={{ fontWeight: "bold" }}>Usage Plan</p> */}
+              <p style={{ fontWeight: "bold" }}>Plano de uso</p>
             </div>
             <div>
               {store.api.generic && (
                 <p>{store.api.swagger.info.version}</p>
               )}
               <p>https://{host}{basePath}</p>
-              {/* <p>{store.api.usagePlan.name}</p> */}
+              <p>{store.api.usagePlan.name}</p>
             </div>
           </div>
           <p>{externalDocs}</p>
@@ -61,16 +61,53 @@ const InfoReplacement = observer(({ specSelectors }) => {
 })
 
 const SubscriptionButtons = observer(class SubscriptionButtons extends React.Component {
-  state = {}
+  state = {
+    loading: false
+  }
+
+  onUnsubscribe() {
+    const { api } = store
+
+    this.setState({ loading: true });
+
+    unsubscribe(api.usagePlan)
+      .then(() => {
+        this.setState({ loading: false });
+      }).catch((error) => {
+        this.setState({ loading: false });
+        console.warn(error);
+      });
+  }
+
+  onSubscribe() {
+    const { api } = store
+
+    this.setState({ loading: true });
+
+    subscribe(api.usagePlan)
+      .then(() => {
+        this.setState({ loading: false });
+      }).catch((error) => {
+        this.setState({ loading: false });
+        console.warn(error);
+      });
+  }
 
   render() {
     const { api } = store
+
     return (
       (api && isAuthenticated()) ? !api.generic ? (
         api.subscribed ? (
-          <Button onClick={() => unsubscribe(api.usagePlan)}>Cancelar inscrição</Button>
+          <div>
+            <Button disabled={this.state.loading} onClick={() => this.onUnsubscribe()}>Cancelar inscrição</Button>
+            <Loader active={this.state.loading} inline style={{ marginLeft: '10px' }} />
+          </div>
         ) : (
-          <Button onClick={() => subscribe(api.usagePlan)}>Inscrever-se</Button>
+          <div>
+            <Button disabled={this.state.loading} onClick={() => this.onSubscribe()}>Inscrever-se</Button>
+            <Loader active={this.state.loading} inline style={{ marginLeft: '10px' }} />
+          </div>
         )
       ) : <Header as='h4' color='grey'>Essa API não está configurada para inscrição.</Header> : null
     )

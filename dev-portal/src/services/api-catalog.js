@@ -10,9 +10,9 @@ import { isAdmin } from './self'
 /* Catalog and API Utils */
 
 /**
- * 
+ *
  * Does all operations to get user data at once.
- * 
+ *
  * @param {Boolean} bustCache=true   Ignore the cache and re-make the calls? Defaults to true.
  */
 export function updateAllUserData(bustCache = true) {
@@ -29,11 +29,11 @@ export function updateAllUserData(bustCache = true) {
 }
 
 /**
- * 
+ *
  * Update the catalog for the current user. Both request and response are cached, so unless the cache is busted, this should only ever make one network call.
- * 
+ *
  * @param {Boolean} [bustCache=false]   Ignore the cache and re-make the network call. Defaults to false.
- * 
+ *
  */
 export function updateUsagePlansAndApisList(bustCache = false) {
   // if we've already tried, just return that promise
@@ -64,9 +64,9 @@ let catalogPromiseCache // WARNING: Don't touch this. Should only be used by upd
 
 /**
  * A function that takes an input usage plans and creates an list of apis out of it.
- * 
+ *
  * - Makes sure each api has a non-recursive 'usagePlan' object
- * 
+ *
  * returns an array of apis
  */
 function getApiGatewayApisFromUsagePlans(usagePlans) {
@@ -84,7 +84,7 @@ function getApiGatewayApisFromUsagePlans(usagePlans) {
 
 /**
  * Return the API with the provided apiId. Can also provide the special strings "FIRST" or "ANY" to get the first API returned. Can select the api returned as a side-effect.
- * 
+ *
  * @param {String} apiId   An apiId or the special strings 'FIRST' or 'ANY'. 'FIRST' and 'ANY' both return the first api encountered.
  * @param {Boolean} [selectIt=false]   If true, sets the found API as the current 'selected' API.
  */
@@ -123,7 +123,7 @@ export function updateVisibility(cacheBust = false) {
 
 /**
  * Fetch and update subscriptions store. Uses caching to determine if it should actually fetch or return the stored result.
- * 
+ *
  * @param {Boolean} [bustCache=false]   Ignore the cache and re-make the network call. Defaults to false.
  */
 export function updateSubscriptions(bustCache = false) {
@@ -155,9 +155,9 @@ export function unsubscribe(usagePlan) {
 }
 
 /**
- * 
+ *
  * Fetches and updates the apiKey in the store. Both request and response are cached, so unless the cache is busted, this should only ever make one network call.
- * 
+ *
  */
 export function updateApiKey(bustCache) {
   let apiKeyOrPromise = store.apiKey ? store.apiKey : apiKeyPromiseCache

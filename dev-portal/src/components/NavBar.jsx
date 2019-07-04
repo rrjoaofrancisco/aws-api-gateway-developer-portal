@@ -3,6 +3,7 @@
 
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { Redirect } from 'react-router'
 import { Menu, Image } from 'semantic-ui-react'
 
 import { isAdmin, isAuthenticated, logout } from 'services/self'
@@ -21,6 +22,14 @@ import './styles/NavBar.css'
 
 export const NavBar = observer(
   class NavBar extends React.Component {
+    constructor(props) {
+      super(props)
+
+      this.state = {
+        activatedMenu: 0
+      }
+    }
+
     getCognitoUrl = (type) => {
       let redirectUri = `${window.location.protocol}//${window.location.host}/login`
       return `${cognitoDomain}/${type}?response_type=token&client_id=${cognitoClientId}&redirect_uri=${redirectUri}`
@@ -36,6 +45,7 @@ export const NavBar = observer(
           </Menu.Menu>
         ) : (
           <Menu.Menu position="right">
+            <Redirect to="/"/>
             <Menu.Item key="register" as="a"
                        href={this.getCognitoUrl('login')}>
                 Login
@@ -45,15 +55,31 @@ export const NavBar = observer(
         )
     }
 
+    getActiveMenu(link) {
+      switch (link) {
+        case 'getting-started':
+          this.setState({ activatedMenu: 1 })
+          break
+        case 'apis':
+          this.setState({ activatedMenu: 2 })
+          break
+
+        default:
+          this.setState({ activatedMenu: 0 })
+      }
+    }
+
     render() {
+      const menu = window.location.href.split('/')[window.location.href.split('/').length - 1];
+
       return <Menu className="navbar-menu" inverted borderless attached>
         <Menu.Item as={Link} to="/">
           <Image size='mini' src="/custom-content/nav-logo.png" style={{ paddingRight: "10px" }} />
           {fragments.Home.title}
         </Menu.Item>
 
-        <Menu.Item as={Link} to="/getting-started">{fragments.GettingStarted.title}</Menu.Item>
-        <Menu.Item as={Link} to="/apis">{fragments.APIs.title}</Menu.Item>
+        <Menu.Item as={Link} active={this.state.activatedMenu===1 || menu === 'getting-started'} onClick={() => this.getActiveMenu('getting-started')} to="/getting-started">{fragments.GettingStarted.title}</Menu.Item>
+        { isAuthenticated() && <Menu.Item active={this.state.activatedMenu===2|| menu === 'apis'} onClick={() => this.getActiveMenu('apis')} as={Link} to="/apis">{fragments.APIs.title}</Menu.Item> }
 
         {this.insertAuthMenu()}
       </Menu >

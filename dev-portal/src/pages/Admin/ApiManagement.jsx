@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 
-import { Button, Table, Modal, Form, Message, Popup, Icon } from 'semantic-ui-react'
+import { Button, Table, Modal, Form, Message, Popup, Icon, Loader } from 'semantic-ui-react'
 
 import { apiGatewayClient } from 'services/api'
 import { getApi } from 'services/api-catalog'
@@ -134,16 +134,21 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
   }
 
   showApiGatewayApi = (api) => {
+    api.loading = true
+
     apiGatewayClient()
       .then(app => app.post('/admin/catalog/visibility', {}, { apiKey: `${api.id}_${api.stage}`, subscribable: `${api.subscribable}` }, {}))
       .then((res) => {
         if (res.status === 200) {
+          api.loading = false
           this.updateLocalApiGatewayApis(store.visibility.apiGateway, api)
         }
       })
   }
 
   hideApiGatewayApi = (api) => {
+    api.loading = true
+
     if (!api.subscribable && !api.id && !api.stage) {
       this.deleteAPISpec(api.genericId)
     } else {
@@ -151,6 +156,7 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
         .then(app => app.delete(`/admin/catalog/visibility/${api.id}_${api.stage}`, {}, {}, {}))
         .then((res) => {
           if (res.status === 200) {
+            api.loading = false
             this.updateLocalApiGatewayApis(store.visibility.apiGateway, api)
           }
         })
@@ -258,7 +264,7 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
                 color='green'
                 style={{'backgroundColor': 'white', width: '100%'}}
                 onClick={() => this.hideAllApiGatewayApis(usagePlan)}>
-            True
+            Sim
         </Button>
       )
     }
@@ -269,14 +275,14 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
                 color='red'
                 style={{'backgroundColor': 'white', width: '100%'}}
                 onClick={() => this.showAllApiGatewayApis(usagePlan)}>
-            False
+            Não
         </Button>
       )
     }
     // some APIs are visible, some are hidden; show the current state (Partial, with a warning) and enable on click
     else {
       return (
-      <Popup content='Users subscribed to any of the APIs in this usage plan will have a valid API key for all APIs in this usage plan, even those that are not visible!' trigger={<Button basic
+      <Popup content='Os usuários inscritos em qualquer uma das APIs nesse plano de uso terão uma chave de API válida para todas as APIs neste plano de uso, mesmo aquelas que não estiverem visíveis!' trigger={<Button basic
                               color='yellow'
                               style={{ backgroundColor: 'white', width: '100%', paddingLeft: '1em', paddingRight: '1em', minWidth: '88px' }}
                               onClick={() => this.showAllApiGatewayApis(usagePlan)}>
@@ -301,7 +307,10 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
         }, [])
         .sort(this.usagePlanSort)
         .map((usagePlan) => {
-          return { ...usagePlan, apis: store.visibility.apiGateway.filter((api) => api.usagePlanId === usagePlan.id).sort(this.tableSort) }
+          return { ...usagePlan, apis: store.visibility.apiGateway.filter((api) => {
+            api.loading = false
+            return api.usagePlanId === usagePlan.id
+          }).sort(this.tableSort) }
         }),
     unsubscribable =
       store.visibility.apiGateway
@@ -320,7 +329,7 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
         })}
         <Table.Row style={{'backgroundColor': '#1678c2', 'color': 'white'}}>
           <Table.Cell colSpan='6'>
-            <b>Not Subscribable</b> <i>No Usage Plan</i>
+            <b>Não registráveis</b> <i>Nenhum plano de uso</i>
           </Table.Cell>
         </Table.Row>
         {unsubscribable.map((api) => api.id !== window.config.restApiId && this.renderRow(api))}
@@ -332,7 +341,7 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
     return (
       <Table.Row>
         <Table.Cell colSpan='4'>
-          No APIs found
+          Nenhuma API encontrada
         </Table.Cell>
       </Table.Row>
     )
@@ -342,7 +351,7 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
     return (
       <Table.Row key={i} style={{'backgroundColor': '#1678c2', 'color': 'white'}}>
         <Table.Cell colSpan='3'>
-          <b>{usagePlan && usagePlan.name}</b> <i>Usage Plan</i>
+        <i>Plano de Uso</i> - <b>{usagePlan && usagePlan.name}</b>
         </Table.Cell>
         <Table.Cell>
             {this.renderHeaderVisibilityButton(usagePlan)}
@@ -359,13 +368,15 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
       <Table.Row>
         <Table.Cell collapsing>{api.name}</Table.Cell>
         <Table.Cell>{api.stage}</Table.Cell>
-        <Table.Cell>{api.subscribable ? 'Subscribable' : 'Not Subscribable'}</Table.Cell>
+        <Table.Cell>{api.subscribable ? 'Registrável' : 'Não registrável'}</Table.Cell>
         <Table.Cell>
           <Button basic
                   color={api.visibility ? 'green' : 'red'}
+                  // disabled={api.loading}
                   style={{ width: '100%' }}
                   onClick={() => api.visibility ? this.hideApiGatewayApi(api) : this.showApiGatewayApi(api)}>
-              {api.visibility ? 'True' : 'False'}
+              {api.visibility && !api.loading ? 'Sim' : 'Não'}
+              {/* <Loader active={api.loading} inline /> */}
           </Button>
         </Table.Cell>
         <Table.Cell>
@@ -374,7 +385,7 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
                   disabled={!api.visibility}
                   style={{ width: '100%' }}
                   onClick={() => this.updateApiGatewayApi(api)}>
-            Update
+            Atualizar
           </Button>
         </Table.Cell>
         <Table.Cell>
@@ -384,7 +395,7 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
                   style={{ width: '100%' }}
                   disabled={!api.visibility || !this.isSdkGenerationConfigurable(api)}
                   onClick={() => this.toggleSdkGeneration(store.visibility.apiGateway, api)}>
-              {api.sdkGeneration ? 'Enabled' : 'Disabled'}
+              {api.sdkGeneration ? 'Ativado' : 'Desativado'}
           </Button>
         </Table.Cell>
       </Table.Row>
@@ -403,12 +414,12 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
             </Table.Header>
             <Table.Header fullWidth>
               <Table.Row>
-                <Table.HeaderCell collapsing sorted="ascending">API Name</Table.HeaderCell>
-                <Table.HeaderCell>Stage</Table.HeaderCell>
-                <Table.HeaderCell>API Type</Table.HeaderCell>
-                <Table.HeaderCell>Displayed</Table.HeaderCell>
-                <Table.HeaderCell>Update</Table.HeaderCell>
-                <Table.HeaderCell>Allow Generating SDKs</Table.HeaderCell>
+                <Table.HeaderCell collapsing sorted="ascending">Nome da API</Table.HeaderCell>
+                <Table.HeaderCell>Estágio</Table.HeaderCell>
+                <Table.HeaderCell>Disponibilidade</Table.HeaderCell>
+                <Table.HeaderCell>Exibindo</Table.HeaderCell>
+                <Table.HeaderCell>Atualizar</Table.HeaderCell>
+                <Table.HeaderCell>Permitir geração de SDK</Table.HeaderCell>
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -421,7 +432,7 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
           <Table celled collapsing>
             <Table.Header fullWidth>
               <Table.Row>
-                <Table.HeaderCell colSpan='4'>Generic APIs</Table.HeaderCell>
+                <Table.HeaderCell colSpan='4'>APIs genéricas</Table.HeaderCell>
               </Table.Row>
             </Table.Header>
             <Table.Header fullWidth>
@@ -434,7 +445,7 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
                     onClose={() => this.setState((prev) => ({ ...prev, modalOpen: false }))}
                     trigger={
                       <Button floated='right' onClick={() => this.setState((prev) => ({ ...prev, modalOpen: true }))}>
-                        Add API
+                        Adicionar API
                     </Button>}
                     open={this.state.modalOpen}
                   >
@@ -447,7 +458,7 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
                             <input type="file" id="files" name="files" accept=".json,.yaml,.yml" multiple={true} ref={this.fileInput} />
                           </Form.Field>
                           {!!this.state.errors.length &&
-                            <Message size='tiny' color='red' list={this.state.errors} header="These files are not parseable or do not contain an api title:" />
+                            <Message size='tiny' color='red' list={this.state.errors} header="Esses arquivos não são analisáveis ou não contêm um título de API:" />
                           }
                           <br />
                           <Button type='submit'>Upload</Button>
@@ -460,8 +471,8 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
             </Table.Header>
             <Table.Header fullWidth>
               <Table.Row>
-                <Table.HeaderCell collapsing sorted="ascending">API Name</Table.HeaderCell>
-                <Table.HeaderCell>Delete</Table.HeaderCell>
+                <Table.HeaderCell collapsing sorted="ascending">Nome da API</Table.HeaderCell>
+                <Table.HeaderCell>Deletar</Table.HeaderCell>
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -473,14 +484,14 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
                       <Button basic
                         color='red'
                         onClick={() => this.deleteAPISpec(apiId)}>
-                        Delete
+                        Deletar
                       </Button>
                     </Table.Cell>
                   </Table.Row>
                 )) : (
                   <Table.Row >
                     <Table.Cell colSpan='4'>
-                      No APIs found
+                      Nenhuma API encontrada
                     </Table.Cell>
                   </Table.Row>
                 )}

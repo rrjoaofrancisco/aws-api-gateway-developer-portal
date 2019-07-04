@@ -16,10 +16,12 @@ import { store } from 'services/state'
 import _ from 'lodash'
 
 function loadUsage(usagePlan, canvasId) {
+  console.log('OI', usagePlan);
   fetchUsage(usagePlan)
     .then((result) => {
       const data = mapUsageByDate(result.data, 'used')
       const ctx = document.getElementById(canvasId)
+      console.log('OLA', result)
 
       let oldDataString = JSON.stringify(_.get(usagePlan, 'usage.data', {}))
       let newDataString = JSON.stringify(data)
@@ -107,7 +109,6 @@ export default observer(() => {
           .filter(usagePlan => usagePlan.subscribed && usagePlan.apis.length)
           .map((usagePlan, index) => {
             let canvasId = `api-usage-chart-container-${usagePlan.id}` + index
-
             loadUsage(usagePlan, canvasId)
 
             return (

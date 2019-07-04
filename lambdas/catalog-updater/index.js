@@ -139,6 +139,7 @@ function usagePlanToCatalogObject(usagePlan, swaggerFileReprs, sdkGeneration, re
     throttle: usagePlan.throttle,
     quota: usagePlan.quota,
     region: region,
+    description: usagePlan.description,
     apis: []
   }
 

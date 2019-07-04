@@ -150,7 +150,7 @@ export function subscribe(usagePlan) {
 export function unsubscribe(usagePlan) {
   console.log('>>> UNSUBSCRIBE USAGEPLAN::: ', usagePlan)
   return apiGatewayClient()
-    .then(apiGatewayClient => apiGatewayClient.delete('/subscriptions/' + usagePlan.id, {}, { region: usagePlan.region }))
+    .then(apiGatewayClient => apiGatewayClient.delete('/subscriptions/' + usagePlan.id, {region: usagePlan.region}))
     .then(() => updateSubscriptions(true))
 }
 

@@ -36,11 +36,13 @@ export const NavBar = observer(
     }
 
     insertAuthMenu() {
+      const menu = window.location.href.split('/')[window.location.href.split('/').length - 1];
+
       return isAuthenticated() ?
         (
           <Menu.Menu position="right">
-            {isAdmin() && <Menu.Item as={Link} to="/admin">Painel de administração</Menu.Item>}
-            <Menu.Item key="dashboard" as={Link} to="/dashboard">Painel de controle</Menu.Item>
+            {isAdmin() && <Menu.Item active={this.state.activatedMenu===3 || menu === 'admin'} onClick={() => this.getActiveMenu('admin')} as={Link} to="/admin">Painel de administração</Menu.Item>}
+            <Menu.Item key="dashboard" active={this.state.activatedMenu===4 || menu === 'dashboard'} onClick={() => this.getActiveMenu('dashboard')} as={Link} to="/dashboard">Painel de controle</Menu.Item>
             <Menu.Item key="signout" as="a" onClick={logout}>Sair</Menu.Item>
           </Menu.Menu>
         ) : (
@@ -63,6 +65,12 @@ export const NavBar = observer(
         case 'apis':
           this.setState({ activatedMenu: 2 })
           break
+        case 'admin':
+          this.setState({ activatedMenu: 3 })
+          break
+        case 'dashboard':
+          this.setState({ activatedMenu: 4 })
+          break
 
         default:
           this.setState({ activatedMenu: 0 })
@@ -73,12 +81,12 @@ export const NavBar = observer(
       const menu = window.location.href.split('/')[window.location.href.split('/').length - 1];
 
       return <Menu className="navbar-menu" inverted borderless attached>
-        <Menu.Item as={Link} to="/">
+        <Menu.Item onClick={() => this.getActiveMenu('')} as={Link} to="/">
           <Image size='mini' src="/custom-content/nav-logo.png" style={{ paddingRight: "10px" }} />
           {fragments.Home.title}
         </Menu.Item>
 
-        <Menu.Item as={Link} active={this.state.activatedMenu===1 || menu === 'getting-started'} onClick={() => this.getActiveMenu('getting-started')} to="/getting-started">{fragments.GettingStarted.title}</Menu.Item>
+        <Menu.Item active={this.state.activatedMenu===1 || menu === 'getting-started'} onClick={() => this.getActiveMenu('getting-started')} as={Link} to="/getting-started">{fragments.GettingStarted.title}</Menu.Item>
         { isAuthenticated() && <Menu.Item active={this.state.activatedMenu===2|| menu === 'apis'} onClick={() => this.getActiveMenu('apis')} as={Link} to="/apis">{fragments.APIs.title}</Menu.Item> }
 
         {this.insertAuthMenu()}

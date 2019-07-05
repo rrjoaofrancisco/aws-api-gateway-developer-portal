@@ -117,7 +117,6 @@ export function updateVisibility(cacheBust = false) {
   return apiGatewayClient()
     .then(app => app.get('/admin/catalog/visibility', {}, {}, {}))
     .then(({ data }) => {
-      console.log(data)
       data.apiGateway.forEach((api) => {
         api.loading = false;
       });
@@ -134,7 +133,6 @@ export function updateVisibility(cacheBust = false) {
  * @param {Boolean} [bustCache=false]   Ignore the cache and re-make the network call. Defaults to false.
  */
 export function updateSubscriptions(bustCache = false) {
-  console.log('CHEGOU AQUI')
   let subscriptionsOrPromise = store.subscriptions.length ? store.subscriptions : subscriptionsPromiseCache
   if (!bustCache && subscriptionsOrPromise) return Promise.resolve(subscriptionsOrPromise)
 

@@ -1,5 +1,5 @@
 ---
-title: Iniciar
+title: Começar a usar
 ---
 
 ## Getting Started

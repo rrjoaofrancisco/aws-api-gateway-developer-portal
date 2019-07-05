@@ -111,7 +111,7 @@ const SubscriptionButtons = observer(class SubscriptionButtons extends React.Com
           </div>
         ) : (
           <div>
-            <Button disabled={this.state.loading} onClick={() => this.onSubscribe()}>Inscrever-se</Button>
+            <Button disabled={this.state.loading} onClick={() => this.onSubscribe()}>Inscrever</Button>
             <Loader active={this.state.loading} inline style={{ marginLeft: '10px' }} />
           </div>
         )

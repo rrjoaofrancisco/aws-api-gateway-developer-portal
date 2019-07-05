@@ -4,6 +4,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { BrowserRouter, Route, Switch, Redirect } from 'react-router-dom'
+import PropTypes from 'prop-types';
 
 import * as queryString from 'query-string'
 
@@ -34,6 +35,7 @@ import './index.css';
 // the following is true && the current
 // user is not an administrator
 const feedbackEnabled = window.config.feedbackEnabled
+let locationListener = '/'
 
 export const AdminRoute = ({component: Component, ...rest}) => (
   <Route {...rest} render={(props) => (
@@ -42,6 +44,29 @@ export const AdminRoute = ({component: Component, ...rest}) => (
       : <Redirect to="/" />
   )} />
 )
+
+class LocationListener extends React.Component {
+  static contextTypes = {
+    router: PropTypes.object
+  };
+
+  componentDidMount() {
+    this.handleLocationChange(this.context.router.history.location)
+    this.unlisten = this.context.router.history.listen(this.handleLocationChange)
+  }
+
+  componentWillUnmount() {
+    this.unlisten()
+  }
+
+  handleLocationChange(location) {
+    locationListener = location
+  }
+
+  render() {
+    return this.props.children;
+  }
+}
 
 class App extends React.Component {
   constructor() {
@@ -59,34 +84,36 @@ class App extends React.Component {
   render() {
     return (
       <BrowserRouter>
-        <React.Fragment>
-          <NavBar />
-          <GlobalModal />
-          <Switch>
-            <Route exact path="/" component={Home} />
-            <Route exact path="/index.html" component={() => {
-              const { action } = queryString.parse(window.location.search)
-              if (action === 'login') {
-                login()
-              } else if (action === 'logout') {
-                logout()
-              }
-              return <Redirect to="/" />
-            }} />
-            <Route path="/getting-started" component={GettingStarted} />
-            <Route path="/dashboard" component={Dashboard} />
-            <AdminRoute path="/admin" component={Admin} />
-            <Route exact path="/apis" component={Apis} />
-            <Route exact path="/apis/search" component={ApiSearch} />
-            <Route exact path="/apis/:apiId" component={Apis}/>
-            <Route path="/apis/:apiId/:stage" component={Apis} />
-            <Route path="/login" render={() => { login(); return <Redirect to="/" /> }} />
-            <Route path="/logout" render={() => { logout(); return <Redirect to="/" /> }} />
-            <Route component={() => <h2>Page not found</h2>} />
-          </Switch>
-          {feedbackEnabled && <Feedback />}
-          <AlertPopup />
-        </React.Fragment>
+        <LocationListener>
+          <React.Fragment>
+            <NavBar />
+            <GlobalModal />
+            <Switch>
+              <Route exact path="/" component={Home} />
+              <Route exact path="/index.html" component={() => {
+                const { action } = queryString.parse(window.location.search)
+                if (action === 'login') {
+                  login()
+                } else if (action === 'logout') {
+                  logout()
+                }
+                return <Redirect to="/" />
+              }} />
+              <Route path="/getting-started" component={GettingStarted} />
+              <Route path="/dashboard" component={Dashboard} />
+              <AdminRoute path="/admin" component={Admin} />
+              <Route exact path="/apis" render={(props) => <Apis locationListener={locationListener} {...props} /> }  />
+              <Route exact path="/apis/search" component={ApiSearch} />
+              <Route exact path="/apis/:apiId" component={Apis}/>
+              <Route path="/apis/:apiId/:stage" component={Apis} />
+              <Route path="/login" render={() => { login(); return <Redirect to="/" /> }} />
+              <Route path="/logout" render={() => { logout(); return <Redirect to="/" /> }} />
+              <Route component={() => <h2>Page not found</h2>} />
+            </Switch>
+            {feedbackEnabled && <Feedback />}
+            <AlertPopup />
+          </React.Fragment>
+        </LocationListener>
       </BrowserRouter>
     )
   }

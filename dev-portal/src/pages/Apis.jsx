@@ -26,6 +26,11 @@ import { store } from 'services/state.js'
 import { observer } from 'mobx-react'
 
 export default observer(class ApisPage extends React.Component {
+
+  constructor(props) {
+    super(props)
+  }
+
   componentDidMount() { this.updateApi().then(() => updateUsagePlansAndApisList(true)) }
   componentDidUpdate() { this.updateApi() }
 

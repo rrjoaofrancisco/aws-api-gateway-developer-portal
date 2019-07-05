@@ -16,7 +16,9 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
   state = {
     modalOpen: false,
     errors: [],
-    loadingBy: ''
+    loadingBy: '',
+    api: undefined,
+    usagePlan: undefined
   }
 
   fileInput = React.createRef()
@@ -138,7 +140,7 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
 
   showApiGatewayApi = (api, loadingBy) => {
     api.loading = true
-    this.setState(prev => ({ ...prev, loadingBy }))
+    this.setState(prev => ({ ...prev, api, loadingBy }))
 
     apiGatewayClient()
       .then(app => app.post('/admin/catalog/visibility', {}, { apiKey: `${api.id}_${api.stage}`, subscribable: `${api.subscribable}` }, {}))
@@ -147,12 +149,14 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
           api.loading = false
           this.updateLocalApiGatewayApis(store.visibility.apiGateway, api)
         }
+      }).catch(() => {
+        api.loading = false
       })
   }
 
   hideApiGatewayApi = (api, loadingBy) => {
     api.loading = true
-    this.setState(prev => ({ ...prev, loadingBy }))
+    this.setState(prev => ({ ...prev, api, loadingBy }))
 
     if (!api.subscribable && !api.id && !api.stage) {
       this.deleteAPISpec(api.genericId)
@@ -164,11 +168,16 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
             api.loading = false
             this.updateLocalApiGatewayApis(store.visibility.apiGateway, api)
           }
+        }).catch(() => {
+          api.loading = false
         })
     }
   }
 
-  showAllApiGatewayApis = (usagePlan) => {
+  showAllApiGatewayApis = (usagePlan, loadingBy) => {
+    usagePlan.loading = true
+    this.setState(prev => ({ ...prev, usagePlan, loadingBy }))
+
     Promise.all(usagePlan.apis.map((api) =>
         apiGatewayClient()
           .then(app => app.post('/admin/catalog/visibility', {}, {
@@ -179,13 +188,21 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
     )).then((promises) => {
       promises.forEach((result) => {
         if (result.status === 200) {
+          usagePlan.loading = false
           this.updateLocalApiGatewayApis(store.visibility.apiGateway, result.api, true)
         }
+
+        console.log(result.status)
       })
+    }).catch(() => {
+      usagePlan.loading = false
     })
   }
 
-  hideAllApiGatewayApis = (usagePlan) => {
+  hideAllApiGatewayApis = (usagePlan, loadingBy) => {
+    usagePlan.loading = true
+    this.setState(prev => ({ ...prev, usagePlan, loadingBy }))
+
     Promise.all(usagePlan.apis.map((api) =>
       apiGatewayClient()
         .then(app => app.delete(`/admin/catalog/visibility/${api.id}_${api.stage}`, {}, {}, {}))
@@ -193,20 +210,29 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
     )).then((promises) => {
       promises.forEach((result) => {
         if (result.status === 200) {
+          usagePlan.loading = false
           this.updateLocalApiGatewayApis(store.visibility.apiGateway, result.api, false)
         }
       })
+    }).catch(() => {
+      usagePlan.loading = false
     })
   }
 
   updateApiGatewayApi = (api, loadingBy) => {
     api.loading = true
-    this.setState(prev => ({ ...prev, loadingBy }))
+    this.setState(prev => ({ ...prev, api, loadingBy }))
 
     apiGatewayClient()
       .then(app => {
-        app.post('/admin/catalog/visibility', {}, { apiKey: `${api.id}_${api.stage}`, subscribable: `${api.subscribable}` }, {})
-        api.loading = false
+        app
+          .post('/admin/catalog/visibility', {}, { apiKey: `${api.id}_${api.stage}`, subscribable: `${api.subscribable}` }, {})
+          .then(() => {
+            api.loading = false
+          }).catch((error) => {
+            api.loading = false
+            console.warn(error)
+          })
       }).catch(() => {
         api.loading = false
       })
@@ -216,7 +242,10 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
     return api.visibility
   }
 
-  toggleSdkGeneration = (apisList, updatedApi) => {
+  toggleSdkGeneration = (apisList, updatedApi, loadingBy) => {
+    updatedApi.loading = true
+    this.setState(prev => ({ ...prev, api: updatedApi, loadingBy }))
+
     apiGatewayClient()
       .then(app => {
         if (updatedApi.sdkGeneration) {
@@ -234,8 +263,11 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
             return stateApi
           })
 
+          updatedApi.loading = false
           store.visibility.apiGateway = updatedApis
         }
+      }).catch(() => {
+        updatedApi.loading = false
       })
   }
 
@@ -273,33 +305,54 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
     // every API is visible, show the "disable" button
     if(numberOfApis === numberofVisibleApis) {
       return (
+        this.state.usagePlan &&
+        this.state.usagePlan.id === usagePlan.id &&
+        this.state.usagePlan.loading &&
+        this.state.loadingBy === 'renderHeaderVisibilityButton-yes' ? (
+        <Button
+          loading
+          style={{ width: '94px', marginRight: '0px !important' }}
+          color='teal'>
+            Loading
+        </Button>) : (
         <Button key={i}
-                color='teal'
-                style={{ width: '100%'}}
-                onClick={() => this.hideAllApiGatewayApis(usagePlan)}>
+          color='teal'
+          style={{ width: '94px', marginRight: '0px !important' }}
+          disabled={(this.state.api && this.state.api.loading) || (this.state.usagePlan && this.state.usagePlan.loading)}
+          onClick={() => this.hideAllApiGatewayApis(usagePlan, 'renderHeaderVisibilityButton-yes')}>
             Sim
-        </Button>
+        </Button>)
       )
     }
     // every API is not visible, show the current state (False) and enable on click
-    else if(numberofVisibleApis === 0) {
+    else if (numberofVisibleApis === 0) {
       return (
+        this.state.usagePlan &&
+        this.state.usagePlan.id === usagePlan.id &&
+        this.state.usagePlan.loading &&
+        this.state.loadingBy === 'renderHeaderVisibilityButton-no' ? (
+        <Button
+          loading
+          style={{ width: '94px', marginRight: '0px !important' }}
+          color='red'>
+            Loading
+        </Button>) : (
         <Button color='red'
-                key={i}
-                style={{ width: '100%'}}
-                onClick={() => this.showAllApiGatewayApis(usagePlan)}>
+          key={i}
+          style={{ width: '94px', marginRight: '0px !important' }}
+          disabled={(this.state.api && this.state.api.loading) || (this.state.usagePlan && this.state.usagePlan.loading)}
+          onClick={() => this.showAllApiGatewayApis(usagePlan, 'renderHeaderVisibilityButton-no')}>
             Não
-        </Button>
+        </Button>)
       )
-    }
     // some APIs are visible, some are hidden; show the current state (Partial, with a warning) and enable on click
-    else {
+    } else {
       return (
       <Popup content='Os usuários inscritos em qualquer uma das APIs nesse plano de uso terão uma chave de API válida para todas as APIs neste plano de uso, mesmo aquelas que não estiverem visíveis!' trigger={<Button
-                              color='yellow'
-                              style={{ backgroundColor: 'white', width: '100%', paddingLeft: '1em', paddingRight: '1em', minWidth: '88px' }}
-                              onClick={() => this.showAllApiGatewayApis(usagePlan)}>
-        Partial <Icon name='warning sign' style={{ paddingLeft: '5px' }} />
+        color='yellow'
+        style={{ backgroundColor: 'white', width: '100%', paddingLeft: '1em', paddingRight: '1em', minWidth: '88px' }}
+        onClick={() => this.showAllApiGatewayApis(usagePlan)}>
+          Partial <Icon name='warning sign' style={{ paddingLeft: '5px' }} />
       </Button>} />
       )
     }
@@ -308,14 +361,13 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
   sortByUsagePlan() {
     if(!store.visibility.apiGateway)
       return this.renderNoApis()
-      console.log(store)
 
     let usagePlans =
       store.visibility.apiGateway
         .filter((api) => api.usagePlanId)
         .reduce((accumulator, api) => {
           if(!accumulator.find((usagePlan) => api.usagePlanId === usagePlan.id)) {
-            accumulator.push({ id: api.usagePlanId, name: api.usagePlanName })
+            accumulator.push({ id: api.usagePlanId, name: api.usagePlanName, loading: api.loading })
           }
           return accumulator
         }, [])
@@ -354,10 +406,10 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
     return (
       <Table.Row key={i} style={{'backgroundColor': '#3e6ca5', 'color': 'white'}}>
         <Table.Cell colSpan='3'>
-        <i>Plano de Uso</i> - <b>{usagePlan && usagePlan.name}</b>
+          <i>Plano de Uso</i> - <b>{usagePlan && usagePlan.name}</b>
         </Table.Cell>
         <Table.Cell>
-            {this.renderHeaderVisibilityButton(usagePlan, i)}
+          {this.renderHeaderVisibilityButton(usagePlan, i)}
         </Table.Cell>
         <Table.Cell colSpan='2'>
 
@@ -367,54 +419,77 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
   }
 
   renderRow(api, i) {
+    console.log(api)
+    console.log(this.state.api)
+    console.log(this.state.loadingBy)
+
     return (
       <Table.Row key={i}>
         <Table.Cell collapsing>{api.name}</Table.Cell>
         <Table.Cell>{api.stage}</Table.Cell>
         <Table.Cell>{api.subscribable ? 'Registrável' : 'Não registrável'}</Table.Cell>
         <Table.Cell>
-          {api.loading && this.state.loadingBy === 'displaying' ? (
+          {
+            this.state.api &&
+            this.state.api.id === api.id &&
+            this.state.api.stage === api.stage &&
+            this.state.api.loading &&
+            this.state.loadingBy === 'renderRow-displaying' ? (
             <Button basic
               loading
-              style={{ marginRight: '0px !important' }}
+              style={{ width: '94px', marginRight: '0px !important' }}
               color={api.visibility ? 'teal' : 'red'}>
                 Loading
             </Button>) : (
             <Button basic
               color={api.visibility ? 'teal' : 'red'}
-              disabled={api.loading}
               style={{ width: '94px', marginRight: '0px' }}
-              onClick={() => api.visibility ? this.hideApiGatewayApi(api, 'displaying') : this.showApiGatewayApi(api, 'displaying')}>
-                {api.visibility && !api.loading ? 'Sim' : 'Não'}
+              disabled={(this.state.api && this.state.api.loading) || (this.state.usagePlan && this.state.usagePlan.loading)}
+              onClick={() => api.visibility ? this.hideApiGatewayApi(api, 'renderRow-displaying') : this.showApiGatewayApi(api, 'renderRow-displaying')}>
+                {api.visibility ? 'Sim' : 'Não'}
             </Button>)
           }
         </Table.Cell>
         <Table.Cell>
-          {api.loading && this.state.loadingBy === 'updating' ? (
+          {
+            this.state.api &&
+            this.state.api.id === api.id &&
+            this.state.api.stage === api.stage &&
+            this.state.api.loading &&
+            this.state.loadingBy === 'renderRow-updating' ? (
             <Button basic
               loading
+              style={{ width: '100%', marginRight: '0px' }}
               color='blue'>
                 Loading
             </Button>) : (
             <Button basic
               color='blue'
-              disabled={!api.visibility}
+              disabled={!api.visibility || ((this.state.api && this.state.api.loading) || (this.state.usagePlan && this.state.usagePlan.loading))}
               style={{ width: '100%' }}
-              onClick={() => this.updateApiGatewayApi(api, 'updating')}>
+              onClick={() => this.updateApiGatewayApi(api, 'renderRow-updating')}>
                 Atualizar
             </Button>)
           }
         </Table.Cell>
         <Table.Cell>
-          {api.loading && this.state.loadingBy === 'sdk' ? (
-            <Button basic loading color={'blue'}>
-              Loading
+          {
+            this.state.api &&
+            this.state.api.id === api.id &&
+            this.state.api.stage === api.stage &&
+            this.state.api.loading &&
+            this.state.loadingBy === 'renderRow-sdk' ? (
+            <Button basic
+              loading
+              style={{ width: '100%', marginRight: '0px' }}
+              color={'blue'}>
+                Loading
             </Button>) : (
             <Button basic // color={api.sdkGeneration ? 'green' : 'red'}
               color='blue'
-              style={{ width: '100%' }}
-              disabled={!api.visibility || !this.isSdkGenerationConfigurable(api, 'sdk')}
-              onClick={() => this.toggleSdkGeneration(store.visibility.apiGateway, api)}>
+              style={{ width: '100%', marginRight: '0px' }}
+              disabled={!api.visibility || !this.isSdkGenerationConfigurable(api) || ((this.state.api && this.state.api.loading) || (this.state.usagePlan && this.state.usagePlan.loading))}
+              onClick={() => this.toggleSdkGeneration(store.visibility.apiGateway, api, 'renderRow-sdk')}>
                 {api.sdkGeneration ? 'Ativado' : 'Desativado'}
             </Button>)
           }

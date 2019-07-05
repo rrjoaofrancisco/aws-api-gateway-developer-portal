@@ -2,7 +2,7 @@
 title: Portal do Desenvolvedor
 header: Portal do Desenvolvedor
 tagline: Sua porta de entrada para os dados.
-gettingStartedButton: Iniciar
+gettingStartedButton: Comece a usar
 apiListButton: Nossas APIs
 ---
 

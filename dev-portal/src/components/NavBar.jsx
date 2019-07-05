@@ -59,9 +59,9 @@ export const NavBar = observer(
 
     getActiveMenu(link) {
       switch (link) {
-        case 'getting-started':
-          this.setState({ activatedMenu: 1 })
-          break
+        // case 'getting-started':
+        //   this.setState({ activatedMenu: 1 })
+        //   break
         case 'apis':
           this.setState({ activatedMenu: 2 })
           break
@@ -86,7 +86,7 @@ export const NavBar = observer(
           {fragments.Home.title}
         </Menu.Item>
 
-        <Menu.Item active={this.state.activatedMenu===1 || menu === 'getting-started'} onClick={() => this.getActiveMenu('getting-started')} as={Link} to="/getting-started">{fragments.GettingStarted.title}</Menu.Item>
+        {/* <Menu.Item active={this.state.activatedMenu===1 || menu === 'getting-started'} onClick={() => this.getActiveMenu('getting-started')} as={Link} to="/getting-started">{fragments.GettingStarted.title}</Menu.Item> */}
         { isAuthenticated() && <Menu.Item active={this.state.activatedMenu===2|| menu === 'apis'} onClick={() => this.getActiveMenu('apis')} as={Link} to="/apis">{fragments.APIs.title}</Menu.Item> }
 
         {this.insertAuthMenu()}

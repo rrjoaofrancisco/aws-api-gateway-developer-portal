@@ -480,6 +480,7 @@ async function getAdminCatalogVisibility(req, res) {
                             apiEntry.subscribable = true
                             apiEntry.usagePlanId = usagePlan.id
                             apiEntry.usagePlanName = usagePlan.name
+                            apiEntry.loading = false
                         }
 
                         apiEntry.sdkGeneration = !!apiEntry.sdkGeneration

@@ -3,6 +3,8 @@ const feedbackController = require('./_common/feedback-controller.js')
 const AWS = require('aws-sdk')
 const catalog = require('./catalog/index')
 const hash = require('object-hash')
+//TODO: USAR
+const { getAllUsagePlans } = require('./shared/get-all-usage-plans')
 
 const Datauri = require('datauri')
 
@@ -461,7 +463,7 @@ async function getAdminCatalogVisibility(req, res) {
                     })
                 })
             })
-
+            //TODO: USAR O GETALLUSAGEPLANS(apigateway)
             let usagePlans = await apiGW.getUsagePlans().promise()
 
             // In the case of apiGateway APIs, the client doesn't know if there are usage plan associated or not

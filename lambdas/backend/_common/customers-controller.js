@@ -3,6 +3,7 @@
 
 'use strict'
 const AWS = require('aws-sdk')
+const { getAllUsagePlans } = require('../shared/get-all-usage-plans')
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient()
 
@@ -180,7 +181,7 @@ function deleteUsagePlanKey(keyId, usagePlanId, error, callback) {
         keyId,
         usagePlanId
     }
-    new AWS.APIGateway({region: regionApi}).deleteUsagePlanKey(params, (err, data) => {
+    new AWS.APIGateway({ region: regionApi }).deleteUsagePlanKey(params, (err, data) => {
         if (err) {
             error(err)
         }
@@ -226,6 +227,7 @@ function getUsagePlansForCustomer(cognitoIdentityId, region, error, callback) {
                         keyId,
                         limit: 1000
                     }
+                    //TODO GETALLUSAGEPLANS(apigateway)
                     new AWS.APIGateway({ region: regionGateway }).getUsagePlans(params, (err, usagePlansData) => {
                         if (err) {
                             // error(err)
@@ -259,7 +261,7 @@ function getUsagePlanForProductCode(productCode, error, callback) {
             console.log(`Got usage plans ${JSON.stringify(data.items)}`)
 
             // note: ensure that only one usage plan maps to a given marketplace product code
-            const usageplan = data.items.find(function (item) {
+            const usageplan = usagePlans.find(function (item) {
                 return item.productCode !== undefined && item.productCode === productCode
             })
             if (usageplan !== undefined) {
@@ -270,7 +272,7 @@ function getUsagePlanForProductCode(productCode, error, callback) {
                 error(`Couldn't find usageplan matching product code ${productCode}`)
             }
         }
-    });
+    }).catch(err => error(err))
 }
 
 function updateCustomerMarketplaceId(cognitoIdentityId, marketplaceCustomerId, error, success) {

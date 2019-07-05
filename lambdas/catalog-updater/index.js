@@ -13,6 +13,8 @@ let AWS = require('aws-sdk'),
   hash = require('object-hash')
 
 const regions = ['us-east-1', 'sa-east-1']
+const { getAllUsagePlans } = require('./shared/get-all-usage-plans')
+
 /**
  * Takes in an s3 listObjectsV2 object and returns whether it's a "swagger file" (one ending in .JSON, .YAML, or .YML),
  * and whether it's in the catalog folder (S3 Key starts with "catalog/").

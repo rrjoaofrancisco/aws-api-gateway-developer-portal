@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom'
 import { Redirect } from 'react-router'
 import { Menu, Image } from 'semantic-ui-react'
 
-import { isAdmin, isAuthenticated, logout } from 'services/self'
+import { isAdmin, isAuthenticated, logout, getLoginRedirectUrl } from 'services/self'
 
 import { cognitoDomain, cognitoClientId } from '../services/api'
 
@@ -31,7 +31,7 @@ export const NavBar = observer(
     }
 
     getCognitoUrl = (type) => {
-      let redirectUri = `${window.location.protocol}//${window.location.host}/login`
+      let redirectUri = getLoginRedirectUrl()
       return `${cognitoDomain}/${type}?response_type=token&client_id=${cognitoClientId}&redirect_uri=${redirectUri}`
     }
 

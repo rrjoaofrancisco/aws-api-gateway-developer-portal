@@ -11,6 +11,10 @@ Add your custom styling here. Note that styling in the source is loaded AFTER th
   z-index: 2;
 }
 
+.ui.table tbody tr > td {
+  width: 300px;
+}
+
 .ui.table thead:nth-child(2) tr:first-child > th {
   position: sticky !important;
   top: 46px;

@@ -81,9 +81,10 @@ function determineContentType(filePath) {
     if (extension === 'css') contentType = 'text/css'
     if (extension === 'js') contentType = 'application/javascript'
     if (extension === 'png' || extension === 'jpeg' || extension === 'gif') contentType = 'image/' + extension
+    if (extension === 'svg') contentType = 'image/svg+xml'
     // note that jpg is a valid file extension
     // but the contentType should be image/jpeg !
-    if (extension === 'jpg') contentType = 'image/' + 'jpeg'
+    if (extension === 'jpg') contentType = 'image/jpeg'
 
     return contentType
 }

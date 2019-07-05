@@ -8,7 +8,6 @@ import { store } from 'services/state'
 
 import _ from 'lodash'
 
-import ApisMenu from './ApisMenu'
 import './ApiSearch.css'
 
 const resultRenderer = (result) => (

@@ -125,10 +125,7 @@ function fetchApiImage(apiList) {
       // fetch automatically follows redirects; setting redirect to `manual` prevents this
       // we need to prevent it so that we can accurately determine if the image exists
       fetch(specificLogo, { headers: { Accept: "image/png" }, redirect: "manual" }).then(response => {
-        if (response.ok)
-          api.logo = specificLogo
-
-        else api.logo = '/custom-content/code.svg'
+        api.logo = response.ok ? specificLogo : '/custom-content/code.svg'
       })
     }
   })

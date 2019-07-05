@@ -3,3 +3,17 @@
 Add your custom styling here. Note that styling in the source is loaded AFTER this sheet, and has higher priority. Make sure your styles here don't collide with source styles.
 
 */
+
+.ui.table thead:first-child tr:first-child > th {
+  position: sticky !important;
+  top: 0;
+  border-radius: 0px !important;
+  z-index: 2;
+}
+
+.ui.table thead:nth-child(2) tr:first-child > th {
+  position: sticky !important;
+  top: 46px;
+  border-radius: 0px !important;
+  z-index: 2;
+}

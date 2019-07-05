@@ -47,7 +47,8 @@ export function init() {
 
 export function login() {
   return new Promise((resolve, reject) => {
-    let idToken, accessToken, username
+    let idToken
+    // let accessToken, username
 
     try {
       window.location.hash
@@ -57,11 +58,11 @@ export function login() {
         .forEach(param => {
           // record the id_token and access_token
           if (param[0] === 'id_token') idToken = param[1]
-          if (param[0] === 'access_token') accessToken = param[1]
+          // if (param[0] === 'access_token') accessToken = param[1]
         })
 
       if (idToken) { // we get both, we set both, but we only really care about the idToken
-        username = jwt_decode(idToken)['cognito:username']
+        // username = jwt_decode(idToken)['cognito:username']
 
         localStorage.setItem(cognitoUserPoolId, idToken)
 

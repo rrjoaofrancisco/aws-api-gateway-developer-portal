@@ -42,6 +42,9 @@ const InfoReplacement = observer(({ specSelectors }) => {
               )}
               <p style={{ fontWeight: "bold" }}>Endpoint</p>
               <p style={{ fontWeight: "bold" }}>Plano de uso</p>
+              {store.api.usagePlan.description && (
+                <p style={{ fontWeight: "bold" }}>Descrição</p>
+              )}
             </div>
             <div>
               {store.api.generic && (
@@ -49,6 +52,9 @@ const InfoReplacement = observer(({ specSelectors }) => {
               )}
               <p>https://{host}{basePath}</p>
               <p>{store.api.usagePlan.name}</p>
+              {store.api.usagePlan.description && (
+                <p>{store.api.usagePlan.description}</p>
+              )}
             </div>
           </div>
           <p>{externalDocs}</p>

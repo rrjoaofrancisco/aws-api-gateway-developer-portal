@@ -20,11 +20,11 @@ function isActive(apiId, selectedApiId, stage, selectedStage) {
 }
 
 export default observer(function ApisMenu(props) {
-  let loadingApis = true;
+  // let loadingApis = true;
   const hasGatewayApis = !!_.get(store, 'apiList.apiGateway.length')
   const hasGenericApis = !!_.get(store, 'apiList.generic.length')
 
-  loadingApis = (hasGatewayApis || hasGenericApis) ? false : true;
+  // loadingApis = (hasGatewayApis || hasGenericApis) ? false : true;
 
   // either grab the selectedApiId from the path OR
   // grab it from the first apiGateway api OR
@@ -103,7 +103,7 @@ function ApiSubsection({ title, listOfApis, selectedApiId, selectedStage = false
           to={`/apis/${api.id}/${api.stage}`}
           active={isActive(api.id.toString(), selectedApiId.toString(), api.stage.toString(), selectedStage)}
         >
-          {api.swagger.info.title}
+          {api.swagger.info.title} - <i>{api.stage}</i>
         </Menu.Item>
       ))}
     </React.Fragment>

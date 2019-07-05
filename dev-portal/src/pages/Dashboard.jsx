@@ -66,7 +66,7 @@ function loadUsage(usagePlan, canvasId) {
             }
           ]
         },
-        options: { 
+        options: {
           scales: { yAxes: [ { ticks: {
             beginAtZero: true,
             suggestedMax: max + (max * 0.02)
@@ -141,10 +141,10 @@ const Title = ({ apis }) => {
   let firstApiName = apis[0].swagger.info.title
 
   let apiList = (
-    <List> 
+    <List>
       { apis.reduce((acc, api) => acc.concat(
         <List.Item key={api.id}>{api.swagger.info.title}</List.Item>
-      ), []) } 
+      ), []) }
     </List>
   )
 
@@ -154,7 +154,7 @@ const Title = ({ apis }) => {
     <Header size="medium">
       Usage for {extraApiCount ? (
         <Popup
-          trigger={ <a style={{ cursor: "pointer" }}>{firstApiName} and {extraApiCount} more...</a> }
+          trigger={ <a href="#" style={{ cursor: "pointer" }}>{firstApiName} and {extraApiCount} more...</a> }
           content={ apiList }
           on={['hover', 'click']}
           position="right center"

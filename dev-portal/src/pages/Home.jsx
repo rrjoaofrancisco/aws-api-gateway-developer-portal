@@ -13,7 +13,7 @@ import { fragments } from 'services/get-fragments'
 import { Link } from 'react-router-dom'
 
 // semantic-ui
-import { Header, Segment, Container, Image, Button } from 'semantic-ui-react'
+import { Segment, Container, Image, Button } from 'semantic-ui-react'
 import '../components/styles/Home.css';
 
 export const HomePage = observer(() => (

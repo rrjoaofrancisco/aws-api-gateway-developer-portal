@@ -116,7 +116,14 @@ export function getApi(apiId, selectIt = false, stage, cacheBust = false) {
 export function updateVisibility(cacheBust = false) {
   return apiGatewayClient()
     .then(app => app.get('/admin/catalog/visibility', {}, {}, {}))
-    .then(({ data }) => (store.visibility = data))
+    .then(({ data }) => {
+      console.log(data)
+      data.apiGateway.forEach((api) => {
+        api.loading = false;
+      });
+
+      store.visibility = data
+    })
 }
 
 /* Subscription Utils */

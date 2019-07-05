@@ -8,7 +8,7 @@ import SwaggerUI from 'swagger-ui'
 import 'swagger-ui/dist/swagger-ui.css'
 
 // semantic-ui
-import { Container, Header, Icon } from 'semantic-ui-react'
+import { Container, Header, Icon, Loader } from 'semantic-ui-react'
 
 // services
 import { isAuthenticated } from 'services/self'
@@ -16,7 +16,10 @@ import { updateUsagePlansAndApisList, getApi } from 'services/api-catalog';
 
 // components
 import ApisMenu from 'components/ApisMenu'
+import ApiSearch from 'components/ApiSearch'
 import SwaggerLayoutPlugin from 'components/SwaggerUiLayout'
+
+import '../components/styles/Apis.css';
 
 // state
 import { store } from 'services/state.js'
@@ -50,12 +53,15 @@ export default observer(class ApisPage extends React.Component {
 
   render() {
     let errorHeader
-    let errorBody 
+    let errorBody
 
+    console.log(store)
     if (store.apiList.loaded) {
       if (!store.apiList.apiGateway.length && !store.apiList.generic.length) {
-        errorHeader = `Nenhuma API publicada`
-        errorBody = `Seu administrador não adicionou nenhuma API à sua conta. Por favor, contate-o para publicar uma API.`
+        setTimeout(() => {
+          errorHeader = `Nenhuma API publicada`
+          errorBody = `Seu administrador não adicionou nenhuma API à sua conta. Por favor, contate-o para publicar uma API.`
+        });
       } else if (!store.api) {
         errorHeader = `API não encontrada.`
         errorBody = `A API selecionada não existe.`
@@ -66,18 +72,20 @@ export default observer(class ApisPage extends React.Component {
       <div style={{ display: "flex", flex: "1 1 auto", overflow: "hidden" }}>
         <ApisMenu path={this.props.match} />
         <div className="swagger-section" style={{ flex: "1 1 auto", overflow: 'auto' }}>
-          <div className="swagger-ui-wrap" id="swagger-ui-container" style={{ padding: "0 20px" }}>
+          <ApiSearch style={{ display: (!errorHeader && !errorBody && store.api) ? 'block' : 'none' }}></ApiSearch>
+          <div className="swagger-ui-wrap" id="swagger-ui-container" style={{ padding: "0 20px", position: "relative", zIndex: "16", height: "100%" }}>
             {errorHeader && errorBody && (
               <React.Fragment>
                 <Header as='h2' icon textAlign="center" style={{ padding: "40px 0px" }}>
                   <Icon name='warning sign' circular />
-                  <Header.Content>{errorHeader}</Header.Content>
+                  <Header.Content className={"error-content"}>{errorHeader}</Header.Content>
                 </Header>
-                <Container text textAlign='justified'>
+                <Container text textAlign='center'>
                   <p>{errorBody}</p>
                 </Container>
               </React.Fragment>
             )}
+            <Loader active={ !errorHeader && !errorBody } size='big'>Carregando APIs</Loader>
           </div>
         </div>
       </div>

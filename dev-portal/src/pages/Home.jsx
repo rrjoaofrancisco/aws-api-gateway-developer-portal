@@ -20,7 +20,7 @@ export const HomePage = observer(() => (
   <React.Fragment>
     <Segment className="content" vertical textAlign='center'>
       <div>
-        <Image style={{ marginBottom: "20px" }} centered size='big' src='/custom-content/home-image.png' />
+        <Image style={{ marginBottom: "40px" }} centered size='big' src='/custom-content/home-image.png' />
         {/* <Header as='h1' style={{ color: "whitesmoke" }}>{fragments.Home.header}</Header> */}
         {/* <p>{fragments.Home.tagline}</p> */}
         <Link to="/getting-started"><Button positive>{fragments.Home.gettingStartedButton}</Button></Link>

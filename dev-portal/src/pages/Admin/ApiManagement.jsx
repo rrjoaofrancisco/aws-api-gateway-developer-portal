@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { Button, Table, Loader, Popup, Icon } from 'semantic-ui-react'
+import { Button, Table, Loader, Popup, Icon, Modal, Form, Message, Menu, Checkbox } from 'semantic-ui-react'
 
 import { apiGatewayClient } from 'services/api'
 import { getApi } from 'services/api-catalog'
@@ -13,15 +13,36 @@ import { toJS } from 'mobx'
 import { observer } from 'mobx-react'
 
 export const ApiManagement = observer(class ApiManagement extends React.Component {
-  state = {
-    modalOpen: false,
-    errors: [],
-    loadingBy: '',
-    api: undefined,
-    usagePlan: undefined
+  constructor(props) {
+    super(props)
+
+    let adminPanel = localStorage.getItem('admin-panel')
+    if (!adminPanel) {
+      localStorage.setItem('admin-panel', JSON.stringify([true, true, false]))
+    } else {
+      adminPanel = JSON.parse(adminPanel)
+    }
+
+    this.state = {
+      modalOpen: false,
+      errors: [],
+      loadingComponent: true,
+      loadingBy: '',
+      api: undefined,
+      usagePlan: undefined,
+      displaySubscribable: adminPanel ? adminPanel[0] : true,
+      displayUnsubscribable: adminPanel ? adminPanel[1] : true,
+      displayGeneric: adminPanel ? adminPanel[2] : false
+    }
   }
 
   fileInput = React.createRef()
+
+  componentDidUpdate() {
+    if (this.state.loadingComponent) {
+      this.setState(prev => ({ ...prev, loadingComponent: false }))
+    }
+  }
 
   componentDidMount() {
     this.getApiVisibility()
@@ -41,7 +62,7 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
         const reader = new FileReader()
 
         reader.onload = ((f) => (e) => {
-          if (f.name.includes('yaml')) {
+          if (f.name.includes('yaml') || f.name.includes('yml')) {
             swaggerObject = YAML.parse(e.target.result)
             swagger = JSON.stringify(swaggerObject)
           } else {
@@ -61,8 +82,8 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
 
           apiGatewayClient()
             .then((app) => app.post('/admin/catalog/visibility', {}, { swagger }, {}))
-            .then((res) => {
-              if (res.status === 200) {
+            .then((result) => {
+              if (result.status === 200) {
                 this.setState(prev => ({ ...prev, modalOpen: anyFailures, errors: anyFailures ? prev.errors : [] }))
               }
               setTimeout(() => this.getApiVisibility(), 2000)
@@ -80,7 +101,7 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
 
       apiGatewayClient()
         .then(app => app.delete(`/admin/catalog/visibility/generic/${myHash}`, {}, {}, {}))
-        .then((res) => {
+        .then((result) => {
           setTimeout(() => this.getApiVisibility(), 2000)
         })
     })
@@ -90,36 +111,37 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
   getApiVisibility = () => {
     apiGatewayClient()
       .then(app => app.get('/admin/catalog/visibility', {}, {}, {}))
-      .then(res => {
-        if (res.status === 200) {
-          // console.log(`visibility: ${JSON.stringify(res.data, null, 2)}`)
+      .then(result => {
+        if (result.status === 200) {
+          // console.log(`visibility: ${JSON.stringify(result.data, null, 2)}`)
 
-          let apiGateway = res.data.apiGateway
-          let generic = res.data.generic && Object.keys(res.data.generic)
+          let apiGateway = result.data.apiGateway
+          let generic = result.data.generic && Object.keys(result.data.generic)
 
           // console.log(`generic: ${JSON.stringify(generic, null, 2)}`)
           // console.log(`api gateway: ${JSON.stringify(apiGateway, null, 2)}`)
 
           apiGateway.forEach((api, i) => {
-            res.data.apiGateway[i].loading = false
+            result.data.apiGateway[i].loading = false
 
             if (generic) {
               generic.forEach(genApi => {
-                if (res.data.generic[`${genApi}`]) {
+                if (result.data.generic[`${genApi}`]) {
                   if (
-                    res.data.generic[`${genApi}`].apiId === api.id &&
-                    res.data.generic[`${genApi}`].stage === api.stage
+                    result.data.generic[`${genApi}`].apiId === api.id &&
+                    result.data.generic[`${genApi}`].stage === api.stage
                   ) {
                     api.visibility = true
-                    delete res.data.generic[`${genApi}`]
+                    delete result.data.generic[`${genApi}`]
                   }
                 }
               })
             }
           })
 
-          store.visibility = res.data
+          store.visibility = result.data
         }
+
       })
   }
 
@@ -144,11 +166,13 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
 
     apiGatewayClient()
       .then(app => app.post('/admin/catalog/visibility', {}, { apiKey: `${api.id}_${api.stage}`, subscribable: `${api.subscribable}` }, {}))
-      .then((res) => {
-        if (res.status === 200) {
+      .then((result) => {
+        if (result.status === 200) {
           api.loading = false
           this.updateLocalApiGatewayApis(store.visibility.apiGateway, api)
         }
+
+        console.log(result.status)
       }).catch(() => {
         api.loading = false
       })
@@ -163,11 +187,13 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
     } else {
       apiGatewayClient()
         .then(app => app.delete(`/admin/catalog/visibility/${api.id}_${api.stage}`, {}, {}, {}))
-        .then((res) => {
-          if (res.status === 200) {
+        .then((result) => {
+          if (result.status === 200) {
             api.loading = false
             this.updateLocalApiGatewayApis(store.visibility.apiGateway, api)
           }
+
+          console.log(result.status)
         }).catch(() => {
           api.loading = false
         })
@@ -184,7 +210,7 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
             apiKey: `${api.id}_${api.stage}`,
             subscribable: `${api.subscribable}`
           }, {}))
-          .then(res => { res.api = api; return res })
+          .then(result => { result.api = api; return result })
     )).then((promises) => {
       promises.forEach((result) => {
         if (result.status === 200) {
@@ -206,13 +232,15 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
     Promise.all(usagePlan.apis.map((api) =>
       apiGatewayClient()
         .then(app => app.delete(`/admin/catalog/visibility/${api.id}_${api.stage}`, {}, {}, {}))
-        .then(res => { res.api = api; return res })
+        .then(result => { result.api = api; return result })
     )).then((promises) => {
       promises.forEach((result) => {
         if (result.status === 200) {
           usagePlan.loading = false
           this.updateLocalApiGatewayApis(store.visibility.apiGateway, result.api, false)
         }
+
+        console.log(result.status)
       })
     }).catch(() => {
       usagePlan.loading = false
@@ -254,8 +282,8 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
           return app.put(`/admin/catalog/${updatedApi.id}_${updatedApi.stage}/sdkGeneration`, {}, {}, {})
         }
       })
-      .then(res => {
-        if (res.status === 200) {
+      .then(result => {
+        if (result.status === 200) {
           const updatedApis = apisList.map(stateApi => {
             if (stateApi.id === updatedApi.id && stateApi.stage === updatedApi.stage) {
               stateApi.sdkGeneration = !stateApi.sdkGeneration
@@ -419,10 +447,6 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
   }
 
   renderRow(api, i) {
-    console.log(api)
-    console.log(this.state.api)
-    console.log(this.state.loadingBy)
-
     return (
       <Table.Row key={i}>
         <Table.Cell collapsing>{api.name}</Table.Cell>
@@ -505,119 +529,163 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
           .sort(this.tableSort)
 
     return (
-      <div style={{ display: 'flex', width: '100%' }}>
-        <div style={{ padding: '2em' }}>
-          <Table color={'teal'} celled collapsing>
-            <Table.Header fullWidth>
-              <Table.Row>
-                <Table.HeaderCell colSpan='6'>API Gateway APIs - <b>Registráveis</b></Table.HeaderCell>
-              </Table.Row>
-            </Table.Header>
-            <Table.Header fullWidth>
-              <Table.Row>
-                <Table.HeaderCell collapsing sorted="ascending">Nome da API</Table.HeaderCell>
-                <Table.HeaderCell>Estágio</Table.HeaderCell>
-                <Table.HeaderCell>Disponibilidade</Table.HeaderCell>
-                <Table.HeaderCell>Exibindo</Table.HeaderCell>
-                <Table.HeaderCell>Atualizar</Table.HeaderCell>
-                <Table.HeaderCell>Permitir geração de SDK</Table.HeaderCell>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              { this.sortByUsagePlan() }
-            </Table.Body>
-          </Table>
-        </div>
-
-        <div style={{ padding: '2em' }}>
-          <Table color={'red'} celled collapsing>
-            {/* <Table.Header fullWidth>
-              <Table.Row>
-                <Table.HeaderCell colSpan='4'>APIs genéricas</Table.HeaderCell>
-              </Table.Row>
-            </Table.Header>
-            <Table.Header fullWidth>
-              <Table.Row>
-                <Table.HeaderCell colSpan='2'>
-                  <Modal
-                    closeIcon
-                    closeOnEscape={true}
-                    closeOnDimmerClick={true}
-                    onClose={() => this.setState((prev) => ({ ...prev, modalOpen: false }))}
-                    trigger={
-                      <Button floated='right' onClick={() => this.setState((prev) => ({ ...prev, modalOpen: true }))}>
-                        Adicionar API
-                    </Button>}
-                    open={this.state.modalOpen}
-                  >
-                    <Modal.Header>Selecione .JSON, .YAML, or .YML files</Modal.Header>
-                    <Modal.Content>
-                      <React.Fragment>
-                        <Form onSubmit={this.uploadAPISpec}>
-                          <Form.Field>
-                            <label htmlFor="files">Selecione os arquivos:</label>
-                            <input type="file" id="files" name="files" accept=".json,.yaml,.yml" multiple={true} ref={this.fileInput} />
-                          </Form.Field>
-                          {!!this.state.errors.length &&
-                            <Message size='tiny' color='red' list={this.state.errors} header="Esses arquivos não são analisáveis ou não contêm um título de API:" />
-                          }
-                          <br />
-                          <Button type='submit'>Upload</Button>
-                        </Form>
-                      </React.Fragment>
-                    </Modal.Content>
-                  </Modal>
-                </Table.HeaderCell>
-              </Table.Row>
-            </Table.Header>
-            <Table.Header fullWidth>
-              <Table.Row>
-                <Table.HeaderCell collapsing sorted="ascending">Nome da API</Table.HeaderCell>
-                <Table.HeaderCell>Deletar</Table.HeaderCell>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {store.visibility.generic ? Object.keys(store.visibility.generic).sort(this.genericTableSort).map((apiId, i) =>
-                (
-                  <Table.Row key={i}>
-                    <Table.Cell collapsing>{store.visibility.generic[apiId].name}</Table.Cell>
-                    <Table.Cell>
-                      <Button basic
-                        color='red'
-                        onClick={() => this.deleteAPISpec(apiId)}>
-                        Deletar
-                      </Button>
-                    </Table.Cell>
-                  </Table.Row>
-                )) : (
-                  <Table.Row >
-                    <Table.Cell colSpan='4'>
-                      Nenhuma API encontrada
-                    </Table.Cell>
-                  </Table.Row>
-                )}
-            </Table.Body> */}
-            <Table.Header fullWidth>
-              <Table.Row>
-                <Table.HeaderCell colSpan='6'>API Gateway APIs - <b>Não registráveis</b> - <i>Nenhum plano de uso</i></Table.HeaderCell>
-              </Table.Row>
-            </Table.Header>
-            <Table.Header fullWidth>
-              <Table.Row>
-                <Table.HeaderCell collapsing sorted="ascending">Nome da API</Table.HeaderCell>
-                <Table.HeaderCell>Estágio</Table.HeaderCell>
-                <Table.HeaderCell>Disponibilidade</Table.HeaderCell>
-                <Table.HeaderCell>Exibindo</Table.HeaderCell>
-                <Table.HeaderCell>Atualizar</Table.HeaderCell>
-                <Table.HeaderCell>Permitir geração de SDK</Table.HeaderCell>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {unsubscribable.map((api, i) => api.id !== window.config.restApiId && this.renderRow(api, 'unsubscribable-' + i))}
-            </Table.Body>
-          </Table>
+      <div style={{ display: "flex", flex: "1 1 auto" }}>
+        {!this.state.loadingComponent && <Menu inverted vertical borderless attached style={{ flex: "0 0 auto" }}>
+          <Menu.Header style={{ padding: "13px 5px 13px 16px", color: 'lightsteelblue' }}>Exibir tabelas</Menu.Header>
+          <Menu.Item className={'display-flex'}>
+            <Checkbox toggle
+              checked={this.state.displaySubscribable}
+              onChange={() => {
+                this.setState(prev => ({...prev, displaySubscribable: !this.state.displaySubscribable}))
+                localStorage.setItem('admin-panel', JSON.stringify([!this.state.displaySubscribable, this.state.displayUnsubscribable, this.state.displayGeneric]))
+              }}
+              className={'developer-toggle'} />
+            <div className={'item-label'}>Registráveis</div>
+          </Menu.Item>
+          <Menu.Item className={'display-flex'}>
+            <Checkbox toggle
+              checked={this.state.displayUnsubscribable}
+              onChange={() => {
+                this.setState(prev => ({...prev, displayUnsubscribable: !this.state.displayUnsubscribable}))
+                localStorage.setItem('admin-panel', JSON.stringify([this.state.displaySubscribable, !this.state.displayUnsubscribable, this.state.displayGeneric]))
+              }}
+              className={'developer-toggle'} />
+            <div className={'item-label'}>Não registráveis</div>
+          </Menu.Item>
+          <Menu.Item className={'display-flex'}>
+            <Checkbox toggle
+              checked={this.state.displayGeneric}
+              onChange={() => {
+                this.setState(prev => ({...prev, displayGeneric: !this.state.displayGeneric}))
+                localStorage.setItem('admin-panel', JSON.stringify([this.state.displaySubscribable, this.state.displayUnsubscribable, !this.state.displayGeneric]))
+              }}
+              className={'developer-toggle'} />
+            <div className={'item-label'}>APIs genéricas</div>
+          </Menu.Item>
+        </Menu>}
+        <div style={{ display: 'flex', width: '100%' }}>
+          {!this.state.loadingComponent ? (
+            <div style={{ display: 'flex', width: '100%' }}>
+              {this.state.displaySubscribable && <div style={{ padding: '2em' }}>
+                <Table color={'teal'} celled collapsing>
+                  <Table.Header fullWidth>
+                    <Table.Row>
+                      <Table.HeaderCell colSpan='6'>API Gateway APIs - <b>Registráveis</b></Table.HeaderCell>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Header fullWidth>
+                    <Table.Row>
+                      <Table.HeaderCell collapsing sorted="ascending">Nome da API</Table.HeaderCell>
+                      <Table.HeaderCell>Estágio</Table.HeaderCell>
+                      <Table.HeaderCell>Disponibilidade</Table.HeaderCell>
+                      <Table.HeaderCell>Exibindo</Table.HeaderCell>
+                      <Table.HeaderCell>Atualizar</Table.HeaderCell>
+                      <Table.HeaderCell>Permitir geração de SDK</Table.HeaderCell>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
+                    { this.sortByUsagePlan() }
+                  </Table.Body>
+                </Table>
+              </div>}
+              {this.state.displayUnsubscribable && <div style={{ padding: '2em' }}>
+                <Table color={'red'} celled collapsing>
+                  <Table.Header fullWidth>
+                    <Table.Row>
+                      <Table.HeaderCell colSpan='6'>API Gateway APIs - <b>Não registráveis</b> - <i>Nenhum plano de uso</i></Table.HeaderCell>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Header fullWidth>
+                    <Table.Row>
+                      <Table.HeaderCell collapsing sorted="ascending">Nome da API</Table.HeaderCell>
+                      <Table.HeaderCell>Estágio</Table.HeaderCell>
+                      <Table.HeaderCell>Disponibilidade</Table.HeaderCell>
+                      <Table.HeaderCell>Exibindo</Table.HeaderCell>
+                      <Table.HeaderCell>Atualizar</Table.HeaderCell>
+                      <Table.HeaderCell>Permitir geração de SDK</Table.HeaderCell>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
+                    {unsubscribable.map((api, i) => api.id !== window.config.restApiId && this.renderRow(api, 'unsubscribable-' + i))}
+                  </Table.Body>
+                </Table>
+              </div>}
+              {this.state.displayGeneric && <div style={{ padding: '2em' }}>
+                <Table color={'red'} celled collapsing>
+                  <Table.Header fullWidth>
+                    <Table.Row>
+                      <Table.HeaderCell colSpan='4'>APIs genéricas</Table.HeaderCell>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Header fullWidth>
+                    <Table.Row>
+                      <Table.HeaderCell colSpan='2'>
+                        <Modal
+                          closeIcon
+                          closeOnEscape={true}
+                          closeOnDimmerClick={true}
+                          onClose={() => this.setState((prev) => ({ ...prev, modalOpen: false }))}
+                          trigger={
+                            <Button floated='right' onClick={() => this.setState((prev) => ({ ...prev, modalOpen: true }))}>
+                              Adicionar API
+                          </Button>}
+                          open={this.state.modalOpen}
+                        >
+                          <Modal.Header>Selecione arquivos tipo .JSON, .YAML, ou .YML</Modal.Header>
+                          <Modal.Content>
+                            <React.Fragment>
+                              <Form onSubmit={this.uploadAPISpec}>
+                                <Form.Field>
+                                  <label htmlFor="files">Selecione os arquivos:</label>
+                                  <input type="file" id="files" name="files" accept=".json,.yaml,.yml" multiple={true} ref={this.fileInput} />
+                                </Form.Field>
+                                {!!this.state.errors.length &&
+                                  <Message size='tiny' color='red' list={this.state.errors} header="Esses arquivos não são analisáveis ou não contêm um título de API:" />
+                                }
+                                <br />
+                                <Button type='submit'>Upload</Button>
+                              </Form>
+                            </React.Fragment>
+                          </Modal.Content>
+                        </Modal>
+                      </Table.HeaderCell>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Header fullWidth>
+                    <Table.Row>
+                      <Table.HeaderCell collapsing sorted="ascending">Nome da API</Table.HeaderCell>
+                      <Table.HeaderCell>Deletar</Table.HeaderCell>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
+                    {store.visibility.generic ? Object.keys(store.visibility.generic).sort(this.genericTableSort).map((apiId, i) =>
+                      (
+                        <Table.Row key={i}>
+                          <Table.Cell collapsing>{store.visibility.generic[apiId].name}</Table.Cell>
+                          <Table.Cell>
+                            <Button basic
+                              color='red'
+                              onClick={() => this.deleteAPISpec(apiId)}>
+                              Deletar
+                            </Button>
+                          </Table.Cell>
+                        </Table.Row>
+                      )) : (
+                        <Table.Row >
+                          <Table.Cell colSpan='4'>
+                            Nenhuma API encontrada
+                          </Table.Cell>
+                        </Table.Row>
+                      )}
+                  </Table.Body>
+                </Table>
+              </div>}
+            </div>
+          ) : (
+            <Loader active size='big'>Carregando APIs</Loader>
+          )}
         </div>
       </div>
-    );
+    )
   }
 })

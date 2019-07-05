@@ -15,6 +15,26 @@ Add your custom styling here. Note that styling in the source is loaded AFTER th
   width: 300px;
 }
 
+.ui.toggle.checkbox input:checked ~ .box:before,
+.ui.toggle.checkbox input:checked ~ label:before {
+  background-color: red !important;
+}
+
+.display-flex {
+  align-items: center;
+  display: flex !important;
+}
+
+.developer-toggle {
+  transform: scale(0.8);
+  width: 35px;
+}
+
+.item-label {
+  display: inline-block !important;
+  margin-left: 15px;
+}
+
 .ui.table thead:nth-child(2) tr:first-child > th {
   position: sticky !important;
   top: 46px;

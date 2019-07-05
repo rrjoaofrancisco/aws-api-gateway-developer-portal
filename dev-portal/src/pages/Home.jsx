@@ -18,7 +18,7 @@ import '../components/styles/Home.css';
 
 export const HomePage = observer(() => (
   <React.Fragment>
-    <Segment className="content" vertical textAlign='center'>
+    <Segment className="content-home" vertical textAlign='center'>
       <div>
         <Image style={{ marginBottom: "40px" }} centered size='big' src='/custom-content/pd.svg' />
         {/* <Header as='h1' style={{ color: "whitesmoke" }}>{fragments.Home.header}</Header> */}

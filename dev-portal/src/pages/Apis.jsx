@@ -60,7 +60,6 @@ export default observer(class ApisPage extends React.Component {
     let errorHeader
     let errorBody
 
-    console.log(store)
     if (store.apiList.loaded) {
       if (!store.apiList.apiGateway.length && !store.apiList.generic.length) {
         setTimeout(() => {

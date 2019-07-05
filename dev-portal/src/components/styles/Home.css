@@ -1,5 +1,14 @@
 .content {
   color: whitesmoke;
+  background: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0px !important;
+}
+
+.content-home {
+  color: whitesmoke;
   background: radial-gradient(#0f509ca6, #0d478c), url('/custom-content/home-background.jpg') no-repeat !important;
   display: flex;
   background-size: cover !important;

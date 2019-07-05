@@ -9,7 +9,7 @@ export class Admin extends Component {
     return (
       <Router>
         <div style={{ display: "flex", flex: "1 1 auto", overflow: "hidden" }}>
-          <SideNav style={{ flex: "0 0 auto" }} />
+          {/* <SideNav style={{ flex: "0 0 auto" }} /> */}
           <div style={{ flex: "1 1 auto", overflow: 'auto' }}>
             <AdminRoute exact path="/admin" component={ApiManagement} />
             <AdminRoute path="/admin/apis" component={ApiManagement} />

@@ -19,13 +19,13 @@
    sodipodi:docname="code_white.svg"
    width="25"
    height="25"
-   inkscape:export-filename="/home/victor/Documents/workspace/aws-api-gateway-developer-portal/dev-portal/public/custom-content/pd_white.png"
-   inkscape:export-xdpi="117.17"
-   inkscape:export-ydpi="117.17"
+   inkscape:export-filename="/home/victor/Documents/workspace/aws-api-gateway-developer-portal/dev-portal/public/custom-content/nav-logo.png"
+   inkscape:export-xdpi="119.04"
+   inkscape:export-ydpi="119.04"
    inkscape:version="0.92.3 (2405546, 2018-03-11)"><metadata
    id="metadata40"><rdf:RDF><cc:Work
        rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
-         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title /></cc:Work></rdf:RDF></metadata><defs
    id="defs38"><filter
      inkscape:collect="always"
      style="color-interpolation-filters:sRGB"
@@ -51,13 +51,13 @@
    showgrid="false"
    showguides="true"
    inkscape:guide-bbox="true"
-   inkscape:zoom="5.7381704"
-   inkscape:cx="33.72282"
-   inkscape:cy="-2.7078402"
+   inkscape:zoom="11.476341"
+   inkscape:cx="-9.9322098"
+   inkscape:cy="3.8273439"
    inkscape:window-x="0"
    inkscape:window-y="325"
    inkscape:window-maximized="1"
-   inkscape:current-layer="Camada_1"><sodipodi:guide
+   inkscape:current-layer="text5278-4"><sodipodi:guide
      position="512.75425,-41.035127"
      orientation="1,0"
      id="guide4938"
@@ -352,6 +352,7 @@
      x="-148.86017"
      y="130.38446" /></text>
 
+
 <text
    xml:space="preserve"
    style="font-style:normal;font-weight:normal;font-size:40px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
@@ -363,22 +364,25 @@
      x="-366.23544"
      y="85.529266" /></text>
 
+
 <path
    style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:1.70966029;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
    d="M 3.5008279,7.6369898 12.285072,2.551372 20.863839,7.6369898 V 17.55137 l -8.581401,4.954475 -8.6703734,-5.005844 z"
    id="path5441"
-   inkscape:connector-curvature="0" /><text
-   xml:space="preserve"
+   inkscape:connector-curvature="0" /><g
+   aria-label="&lt;/&gt;"
+   transform="scale(0.93704131,1.0671888)"
    style="font-style:normal;font-weight:normal;font-size:7.5593257px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.18898316"
-   x="6.7406068"
-   y="13.996302"
-   id="text5278-4"
-   transform="scale(0.93704131,1.0671888)"><tspan
-     sodipodi:role="line"
-     id="tspan5276-1"
-     x="6.7406068"
-     y="13.996302"
-     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Raleway SemiBold';-inkscape-font-specification:'Raleway SemiBold, ';fill:#ffffff;stroke-width:0.18898316">&lt;/&gt;</tspan></text>
+   id="text5278-4"><path
+     d="M 6.9900645,11.849453 10.164981,9.9293844 v 0.8844416 l -1.9729837,1.22461 1.9729837,1.194374 v 0.922237 L 6.9900645,12.265216 Z"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Raleway SemiBold';-inkscape-font-specification:'Raleway SemiBold, ';fill:#ffffff;stroke-width:0.18898316"
+     id="path3102" /><path
+     d="M 15.416587,8.6291804 11.735195,13.996302 H 10.812957 L 14.494349,8.6291804 Z"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Raleway SemiBold';-inkscape-font-specification:'Raleway SemiBold, ';fill:#ffffff;stroke-width:0.18898316"
+     id="path3104" /><path
+     d="M 19.257196,12.265216 16.07472,14.155047 V 13.23281 l 1.972984,-1.194374 -1.972984,-1.22461 V 9.9293844 l 3.182476,1.9200686 z"
+     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Raleway SemiBold';-inkscape-font-specification:'Raleway SemiBold, ';fill:#ffffff;stroke-width:0.18898316"
+     id="path3106" /></g>
 
 <path
    style="opacity:0.51300001;fill:#0e4a91;fill-opacity:1;stroke:#000000;stroke-width:15.67383671;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.49541285;filter:url(#filter9582-5)"
@@ -402,4 +406,5 @@
      x="348.44577"
      y="191.06316"
      style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Raleway SemiBold';-inkscape-font-specification:'Raleway SemiBold, ';fill:#ffffff;stroke-width:1.66157365">&lt;/&gt;</tspan></text>
+
 </svg>

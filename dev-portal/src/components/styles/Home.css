@@ -1,7 +1,8 @@
 .content {
   color: whitesmoke;
-  background-image: radial-gradient(#0F509C, #0d478c) !important;
+  background: radial-gradient(#0f509ca6, #0d478c), url('/custom-content/home-background.jpg') no-repeat !important;
   display: flex;
+  background-size: cover !important;
   justify-content: center;
   align-items: center;
   height: 70%;

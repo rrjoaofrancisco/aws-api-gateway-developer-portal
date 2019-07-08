@@ -530,36 +530,36 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
 
     return (
       <div style={{ display: "flex", flex: "1 1 auto" }}>
-        {!this.state.loadingComponent && <Menu inverted vertical borderless attached style={{ flex: "0 0 auto" }}>
-          <Menu.Header style={{ padding: "13px 5px 13px 16px", color: 'lightsteelblue' }}>Exibir tabelas</Menu.Header>
-          <Menu.Item className={'display-flex'}>
+        {!this.state.loadingComponent && <Menu className={'admin-bar'} inverted vertical borderless attached>
+          <Menu.Header style={{ padding: "13px 5px 13px 16px", color: 'lightsteelblue', position: 'sticky', top: '0px' }}>Exibir tabelas</Menu.Header>
+          <Menu.Item style={{ position: 'sticky', top: '50px' }} className={'display-flex'}>
             <Checkbox toggle
               checked={this.state.displaySubscribable}
               onChange={() => {
                 this.setState(prev => ({...prev, displaySubscribable: !this.state.displaySubscribable}))
                 localStorage.setItem('admin-panel', JSON.stringify([!this.state.displaySubscribable, this.state.displayUnsubscribable, this.state.displayGeneric]))
               }}
-              className={'developer-toggle'} />
+              className={'developer-toggle-header'} />
             <div className={'item-label'}>Registráveis</div>
           </Menu.Item>
-          <Menu.Item className={'display-flex'}>
+          <Menu.Item style={{ position: 'sticky', top: '100px' }} className={'display-flex'}>
             <Checkbox toggle
               checked={this.state.displayUnsubscribable}
               onChange={() => {
                 this.setState(prev => ({...prev, displayUnsubscribable: !this.state.displayUnsubscribable}))
                 localStorage.setItem('admin-panel', JSON.stringify([this.state.displaySubscribable, !this.state.displayUnsubscribable, this.state.displayGeneric]))
               }}
-              className={'developer-toggle'} />
+              className={'developer-toggle-header'} />
             <div className={'item-label'}>Não registráveis</div>
           </Menu.Item>
-          <Menu.Item className={'display-flex'}>
+          <Menu.Item style={{ position: 'sticky', top: '150px' }} className={'display-flex'}>
             <Checkbox toggle
               checked={this.state.displayGeneric}
               onChange={() => {
                 this.setState(prev => ({...prev, displayGeneric: !this.state.displayGeneric}))
                 localStorage.setItem('admin-panel', JSON.stringify([this.state.displaySubscribable, this.state.displayUnsubscribable, !this.state.displayGeneric]))
               }}
-              className={'developer-toggle'} />
+              className={'developer-toggle-header'} />
             <div className={'item-label'}>APIs genéricas</div>
           </Menu.Item>
         </Menu>}

@@ -27,33 +27,51 @@ import { observer } from 'mobx-react'
 
 export default observer(class ApisPage extends React.Component {
 
-  constructor(props) {
-    super(props)
+  componentDidMount() {
+    this.updateApi()
+      .then(() => {
+        updateUsagePlansAndApisList(true)
+      }).catch((error) => {
+        console.warn('>>>>>> ApisPage - componentDidMount - updateApi', error)
+      })
   }
 
-  componentDidMount() { this.updateApi().then(() => updateUsagePlansAndApisList(true)) }
-  componentDidUpdate() { this.updateApi() }
+  componentDidUpdate() {
+    this.updateApi()
+      .then(() => {
+      })
+      .catch((error) => {
+        console.warn('>>>>>> ApisPage - componentDidUpdate - updateApi', error)
+      })
+  }
 
   updateApi = () => {
-    return getApi(this.props.match.params.apiId || 'ANY', true, this.props.match.params.stage)
-      .then(api => {
-        if (api) {
-          let swaggerUiConfig = {
-            dom_id: '#swagger-ui-container',
-            plugins: [SwaggerLayoutPlugin],
-            supportedSubmitMethods: [],
-            spec: api.swagger,
-            onComplete: () => {
-              if (store.apiKey)
-                uiHandler.preauthorizeApiKey("api_key", store.apiKey)
+    console.log('>>>>>>>>>>>> updateApi')
+    return new Promise((resolve, reject) => {
+      getApi(this.props.match.params.apiId || 'ANY', true, this.props.match.params.stage)
+        .then(api => {
+          if (api) {
+            let swaggerUiConfig = {
+              dom_id: '#swagger-ui-container',
+              plugins: [SwaggerLayoutPlugin],
+              supportedSubmitMethods: [],
+              spec: api.swagger,
+              onComplete: () => {
+                if (store.apiKey)
+                  uiHandler.preauthorizeApiKey("api_key", store.apiKey)
+              }
             }
+            if (isAuthenticated()) {
+              delete swaggerUiConfig.supportedSubmitMethods
+            }
+            let uiHandler = SwaggerUI(swaggerUiConfig)
+
+            resolve(api)
           }
-          if (isAuthenticated()) {
-            delete swaggerUiConfig.supportedSubmitMethods
-          }
-          let uiHandler = SwaggerUI(swaggerUiConfig)
-        }
-      })
+        }).catch((error) => {
+          reject(error)
+        })
+    })
   }
 
   render() {

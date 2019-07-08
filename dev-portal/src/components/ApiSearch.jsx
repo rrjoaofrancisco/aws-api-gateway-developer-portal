@@ -79,7 +79,7 @@ export default observer(class ApiSearch extends Component {
       categories["Não registrável"].results.push(api)
     })
 
-    this.setState((prev) => ({ ...prev, categories }), () => { console.log(this.state.categories) })
+    this.setState((prev) => ({ ...prev, categories }))
   }
 
 

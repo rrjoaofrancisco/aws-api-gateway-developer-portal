@@ -58,6 +58,7 @@ const renderers = {
     // if absolute url, use an `a` tag
     // https://stackoverflow.com/a/19709846/4060061
     if (/^(?:[a-z]+:)?\/\//i.test(href))
+      // eslint-disable-next-line
       return <a href={href} target="_blank" rel="noopener noreferrer" {...props} />
 
     // replace links with react-router-dom tags so that they

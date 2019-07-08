@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { BrowserRouter as Router } from 'react-router-dom'
 
-import { ApiManagement, SideNav } from './'
+import { ApiManagement } from './'
 import { AdminRoute } from './../../';
 
 export class Admin extends Component {

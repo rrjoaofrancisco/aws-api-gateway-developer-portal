@@ -61,6 +61,7 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
         const file = files[i]
         const reader = new FileReader()
 
+        // eslint-disable-next-line
         reader.onload = ((f) => (e) => {
           if (f.name.includes('yaml') || f.name.includes('yml')) {
             swaggerObject = YAML.parse(e.target.result)
@@ -105,7 +106,6 @@ export const ApiManagement = observer(class ApiManagement extends React.Componen
           setTimeout(() => this.getApiVisibility(), 2000)
         })
     })
-
   }
 
   getApiVisibility = () => {

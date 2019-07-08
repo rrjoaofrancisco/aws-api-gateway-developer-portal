@@ -40,10 +40,13 @@ export function updateUsagePlansAndApisList(bustCache = false) {
   if (!bustCache && catalogPromiseCache) return catalogPromiseCache
 
   store.apiList.loaded = false
+  console.log('>>>>>>>>>>>> updateUsagePlansAndApisList')
 
+  console.log(catalogPromiseCache)
   return catalogPromiseCache = apiGatewayClient()
     .then(apiGatewayClient => apiGatewayClient.get('/catalog', {}, {}, {}))
     .then(({ data = [] }) => {
+      console.log('>>>>>>>>>>>> updateUsagePlansAndApisList >>>>> SUCCESS')
       store.usagePlans = data.apiGateway
       store.apiList = {
         loaded: true,
@@ -51,7 +54,9 @@ export function updateUsagePlansAndApisList(bustCache = false) {
         generic: data.generic
       }
     })
-    .catch(() => {
+    .catch((error) => {
+      console.warn(error)
+      console.log('>>>>>>>>>>>> updateUsagePlansAndApisList >>>>> ERROR')
       store.usagePlans = null
       store.apiList = {
         loaded: true,

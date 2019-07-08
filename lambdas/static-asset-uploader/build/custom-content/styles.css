@@ -15,19 +15,14 @@ Add your custom styling here. Note that styling in the source is loaded AFTER th
   width: 300px;
 }
 
-.ui.toggle.checkbox input:checked ~ .box:before,
-.ui.toggle.checkbox input:checked ~ label:before {
-  background-color: red !important;
-}
-
 .display-flex {
   align-items: center;
   display: flex !important;
 }
 
-.developer-toggle {
+.developer-toggle-header {
   transform: scale(0.8);
-  width: 35px;
+  width: 35px !important;
 }
 
 .item-label {
@@ -40,4 +35,11 @@ Add your custom styling here. Note that styling in the source is loaded AFTER th
   top: 46px;
   border-radius: 0px !important;
   z-index: 2;
+}
+
+.admin-bar {
+  position: sticky;
+  left: 0;
+  z-index: 15;
+  flex: 0 0 auto;
 }
